@@ -2,9 +2,10 @@
 
 /* ---------- Tokens ---------- */
 :root {
-  --paper: #F2EFE8; --card: #FBFAF6; --ink: #23251F; --muted: #75776E; --line: #DAD8CD; --hover: #ECE9E0;
+  --page: #F2EFE8; --paper: #F2EFE8; --card: #FBFAF6; --ink: #23251F; --muted: #75776E; --line: #DAD8CD; --hover: #ECE9E0;
   --win: #4F7358; --loss: #A9503F; --wood: #8D7857; --line-strong: #BDBBB0;
   --tint-bg: #E6EBE3; --tint-line: #C5D0C4;
+  --shadow: rgba(35, 37, 31, .14);
   color-scheme: light;
   --serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Iowan Old Style", Georgia, serif;
   --sans: "Hiragino Sans", "Yu Gothic UI", "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
@@ -14,9 +15,11 @@
 }
 
 :root[data-theme="dark"] {
-  --paper: #171916; --card: #1F221E; --ink: #E9E6DC; --muted: #9A9C92; --line: #34382F; --hover: #2A2E27;
-  --win: #7BA886; --loss: #D0776A; --wood: #B79B6E; --line-strong: #4A4F44;
+  /* three calm layers: page, then bar and menu surfaces, then cards */
+  --page: #121411; --paper: #1A1D19; --card: #222620; --ink: #E9E6DC; --muted: #9C9E93; --line: #31362D; --hover: #2A2F27;
+  --win: #7BA886; --loss: #D0776A; --wood: #B79B6E; --line-strong: #454B40;
   --tint-bg: #26332A; --tint-line: #3A5142;
+  --shadow: rgba(0, 0, 0, .45);
   color-scheme: dark;
 }
 
@@ -24,7 +27,7 @@
 [hidden] { display: none !important; }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--sans); }
+body { margin: 0; background: var(--page); color: var(--ink); font: 400 16px/1.6 var(--sans); }
 main { max-width: 1040px; margin: 0 auto; padding: 0 var(--edge) 40px; overflow-x: clip; }
 p { margin: 0; }
 h1, h2, h3 { margin: 0; font-family: var(--serif); font-weight: 400; }
@@ -75,23 +78,19 @@ label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 #favorites-panel .chips { justify-content: center; }
 
 /* ---------- Top bar and navigation ---------- */
-.topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: stretch; gap: 28px; min-height: 60px; margin: 0 calc(-1 * var(--edge)); padding: 0 var(--edge); background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: stretch; gap: 28px; min-height: 60px; margin: 0 calc(-1 * var(--edge)); padding: 0 var(--edge); background: var(--paper); border-bottom: 1px solid var(--line); }
 .brand { align-self: center; font: 1.1rem var(--serif); color: inherit; text-decoration: none; white-space: nowrap; }
 .nav-toggle { display: none; }
-.theme-toggle { order: 2; position: relative; display: grid; place-items: center; align-self: center; flex: none; width: 38px; height: 38px; padding: 0; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 8px; transition: background .2s; }
-.theme-toggle:hover { color: var(--ink); background: var(--hover); }
-.theme-toggle .icon { grid-area: 1 / 1; width: 19px; height: 19px; transition: opacity .2s ease; }
-.theme-toggle .sun, :root[data-theme="dark"] .theme-toggle .moon { opacity: 0; }
-:root[data-theme="dark"] .theme-toggle .sun { opacity: 1; }
-.navbar { order: 1; display: flex; flex: 1; align-items: stretch; justify-content: space-between; gap: 20px; min-width: 0; }
+.navbar { display: flex; flex: 1; align-items: stretch; justify-content: space-between; gap: 20px; min-width: 0; }
 .tabs { display: flex; gap: 2px; }
 .tab { padding: 0 14px; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; transition: color .2s, border-color .2s; }
 .tab:hover { color: var(--ink); background: none; border-color: var(--line-strong); }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
-.actions { display: flex; align-items: center; gap: 4px; margin: 12px 0; padding-left: 20px; border-left: 1px solid var(--line); }
+.actions { display: flex; align-items: center; margin: 12px 0; padding-left: 20px; border-left: 1px solid var(--line); }
+.tools { display: flex; align-items: center; align-self: center; gap: 2px; }
 .icon { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-/* Toolbar actions: plain text with an icon. Only Fetch latest has a hairline outline. */
+/* Toolbar buttons: Account is text, the rest are plain icons. */
 .tool { gap: 8px; height: 36px; padding: 0 12px; font: 400 .92rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 8px; transition: color .2s, background .2s, border-color .2s; }
 .tool:hover { color: var(--ink); background: var(--hover); border-color: transparent; }
 .tool:focus-visible { outline-width: 1.5px; outline-offset: 2px; }
@@ -101,16 +100,16 @@ label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 .tool[aria-pressed="true"] .star { fill: var(--wood); stroke: var(--wood); }
 .tool .chevron { width: 15px; height: 15px; transition: transform .2s ease; }
 .tool[aria-expanded="true"] .chevron { transform: rotate(180deg); }
-/* Wide screens: Favorite and Fetch latest are plain icons. The text stays for screen readers and the phone menu. */
-@media (min-width: 1081px) {
-  .icon-only { justify-content: center; width: 38px; padding: 0; color: var(--ink); }
-  .icon-only .tool-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .icon-only[aria-pressed="true"] { color: var(--wood); }
-  .icon-only .icon { width: 19px; height: 19px; }
-}
+.icon-only { justify-content: center; width: 38px; height: 38px; padding: 0; color: var(--ink); }
+.icon-only .icon { width: 19px; height: 19px; }
+.icon-only[aria-pressed="true"] { color: var(--wood); }
+.theme-toggle { display: grid; place-items: center; }
+.theme-toggle .icon { grid-area: 1 / 1; transition: opacity .2s ease; }
+.theme-toggle .sun, :root[data-theme="dark"] .theme-toggle .moon { opacity: 0; }
+:root[data-theme="dark"] .theme-toggle .sun { opacity: 1; }
 @keyframes fade-in { from { opacity: 0; } }
 .account-switcher { position: relative; }
-.menu { position: absolute; z-index: 60; right: 0; top: calc(100% + 8px); width: min(340px, calc(100vw - 32px)); padding: 18px; box-shadow: 0 10px 28px color-mix(in srgb, var(--ink) 12%, transparent); animation: fade-in .15s ease; }
+.menu { position: absolute; z-index: 60; right: 0; top: calc(100% + 8px); width: min(340px, calc(100vw - 32px)); padding: 18px; background: color-mix(in srgb, var(--paper) 80%, transparent); backdrop-filter: blur(14px); border: 1px solid var(--line); box-shadow: 0 10px 28px var(--shadow); animation: fade-in .15s ease; }
 .menu-heading { margin: 16px 0 8px; font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--wood); }
 .menu-heading:first-child { margin-top: 0; }
 .menu .hint { margin: 0 0 8px; }
@@ -292,8 +291,8 @@ dialog p { margin-bottom: 18px; }
 
 /* Phones and tablets: the tabs and buttons fold into a menu opened with the three bars */
 @media (max-width: 1080px) {
-  .topbar { align-items: center; gap: 12px; min-height: 56px; background: var(--paper); backdrop-filter: none; }
-  .theme-toggle { order: 0; margin-left: auto; }
+  .topbar { align-items: center; gap: 8px; min-height: 56px; }
+  .tools { margin-left: auto; }
   .nav-toggle { display: inline-flex; align-items: center; gap: 10px; height: 44px; margin-right: -10px; padding: 0 10px; font: 400 .95rem var(--sans); color: var(--ink); background: transparent; border: 0; border-radius: 8px; }
   .nav-toggle:hover { color: var(--ink); background: var(--hover); }
   .bars { position: relative; width: 20px; height: 14px; }
@@ -305,18 +304,22 @@ dialog p { margin-bottom: 18px; }
   .nav-toggle[aria-expanded="true"] i:nth-child(2) { opacity: 0; }
   .nav-toggle[aria-expanded="true"] i:nth-child(3) { top: 6px; transform: rotate(-45deg); }
   /* a small floating panel under the top bar, so the page stays visible around it */
-  .navbar { display: none; position: absolute; top: calc(100% + 6px); right: var(--edge); width: min(260px, calc(100vw - 2 * var(--edge))); flex-direction: column; align-items: stretch; gap: 6px; max-height: calc(100dvh - 56px - 24px); padding: 4px 14px 10px; overflow-y: auto; background: color-mix(in srgb, var(--paper) 80%, transparent); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 32px color-mix(in srgb, var(--ink) 12%, transparent); }
+  .navbar { display: none; position: absolute; top: calc(100% + 6px); right: var(--edge); width: min(260px, calc(100vw - 2 * var(--edge))); flex-direction: column; align-items: stretch; gap: 6px; max-height: calc(100dvh - 56px - 24px); padding: 4px 14px 10px; overflow-y: auto; background: color-mix(in srgb, var(--paper) 80%, transparent); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 32px var(--shadow); }
   .navbar.open { display: flex; animation: fade-in .18s ease; }
   .tabs, .actions { flex-direction: column; align-items: stretch; gap: 0; }
   .actions { margin: 0; padding-left: 0; border-left: 0; border-top: 1px solid var(--line-strong); }
-  .tabs .tab:last-child, .account-switcher .tool { border-bottom: 0; }
   /* every entry sits at 80% and comes to full strength when pointed at or selected */
-  .tab, .tool, .tool:hover, .tool[aria-pressed="true"], .tool[aria-pressed="true"]:hover { justify-content: flex-start; height: auto; min-height: 44px; padding: 0 4px; font-size: 1rem; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; opacity: .8; transition: opacity .2s ease, padding .2s ease; }
-  .tab:hover, .tab:focus-visible, .tool:hover, .tool:focus-visible, .tool[aria-pressed="true"]:hover, .tab[aria-selected="true"] { opacity: 1; }
+  .navbar .tab, .navbar .tool, .navbar .tool:hover { justify-content: flex-start; width: auto; height: auto; min-height: 44px; padding: 0 4px; font-size: 1rem; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; opacity: .8; transition: opacity .2s ease, padding .2s ease; }
+  .navbar .tab:hover, .navbar .tab:focus-visible, .navbar .tool:hover, .navbar .tool:focus-visible, .navbar .tab[aria-selected="true"] { opacity: 1; }
+  .tabs .tab:last-child, .account-switcher .tool { border-bottom: 0; }
   .tab[aria-selected="true"] { padding-left: 12px; box-shadow: inset 2px 0 0 var(--wood); }
   .tool .chevron { margin-left: auto; }
   .account-switcher { position: static; }
-  .menu { position: static; width: auto; padding: 12px 4px 4px; background: transparent; border: 0; border-radius: 0; box-shadow: none; animation: none; }
+  .menu { position: static; width: auto; padding: 12px 4px 4px; background: transparent; backdrop-filter: none; border: 0; border-radius: 0; box-shadow: none; animation: none; }
+}
+
+@media (max-width: 400px) {
+  .brand-tail { display: none; }
 }
 
 @media (max-width: 720px) {

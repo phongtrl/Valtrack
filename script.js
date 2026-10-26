@@ -119,7 +119,7 @@ function applyTheme() {
   const pref = store.get(KEY_THEME) || "auto";
   const dark = pref === "dark" || (pref === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.dataset.theme = dark ? "dark" : "light";
-  document.querySelector('meta[name="theme-color"]').content = dark ? "#171916" : "#F2EFE8";
+  document.querySelector('meta[name="theme-color"]').content = dark ? "#121411" : "#F2EFE8";
   const toggle = $("theme-toggle");
   const label = dark ? "Switch to light mode" : "Switch to dark mode";
   toggle.setAttribute("aria-label", label);
@@ -422,7 +422,7 @@ async function syncMatches(manual = true) {
   const button = $("sync");
   button.disabled = true;
   button.classList.add("is-loading");
-  button.querySelector(".tool-label").textContent = "Fetching…";
+  button.setAttribute("aria-busy", "true");
   setStatus("Fetching recent matches from HenrikDev…");
   $("app").classList.toggle("loading", !matches.length);
   try {
@@ -463,7 +463,7 @@ async function syncMatches(manual = true) {
     $("app").classList.remove("loading");
     button.disabled = false;
     button.classList.remove("is-loading");
-    button.querySelector(".tool-label").textContent = "Fetch latest";
+    button.setAttribute("aria-busy", "false");
   }
 }
 
@@ -485,7 +485,6 @@ function updateFavoriteButton() {
   button.setAttribute("aria-pressed", String(active));
   button.setAttribute("aria-label", active ? "Remove from favorites" : "Add to favorites");
   button.title = active ? "Remove from favorites" : "Add to favorites";
-  button.querySelector(".tool-label").textContent = active ? "Favorited" : "Favorite";
 }
 function toggleCurrentFavorite() {
   if (!account) return;
@@ -575,9 +574,9 @@ function setNav(open) {
 function bindNavbar() {
   $("nav-toggle").addEventListener("click", () => setNav(!$("navbar").classList.contains("open")));
   $("navbar").addEventListener("click", (e) => {
-    if (e.target.closest("[data-tab], #sync, #favorite-current")) setNav(false); // picking something closes the menu
+    if (e.target.closest("[data-tab]")) setNav(false); // picking a section closes the menu
   });
-  document.addEventListener("click", (e) => { if (!e.target.closest(".topbar")) setNav(false); });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".navbar, #nav-toggle")) setNav(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") setNav(false); });
   matchMedia("(min-width: 1081px)").addEventListener("change", (e) => { if (e.matches) setNav(false); });
 }
