@@ -120,7 +120,10 @@ function applyTheme() {
   const dark = pref === "dark" || (pref === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.dataset.theme = dark ? "dark" : "light";
   document.querySelector('meta[name="theme-color"]').content = dark ? "#171916" : "#F2EFE8";
-  document.querySelectorAll("[data-theme-choice]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeChoice === pref)));
+  const toggle = $("theme-toggle");
+  const label = dark ? "Switch to light mode" : "Switch to dark mode";
+  toggle.setAttribute("aria-label", label);
+  toggle.title = label;
 }
 
 function registerServiceWorker() {
@@ -481,6 +484,7 @@ function updateFavoriteButton() {
   const active = isFavorite();
   button.setAttribute("aria-pressed", String(active));
   button.setAttribute("aria-label", active ? "Remove from favorites" : "Add to favorites");
+  button.title = active ? "Remove from favorites" : "Add to favorites";
   button.querySelector(".tool-label").textContent = active ? "Favorited" : "Favorite";
 }
 function toggleCurrentFavorite() {
@@ -629,10 +633,10 @@ function bindEvents() {
   bindTabs();
   bindMatchDetail();
   bindInsights();
-  document.querySelectorAll("[data-theme-choice]").forEach((b) => b.addEventListener("click", () => {
-    store.set(KEY_THEME, b.dataset.themeChoice);
+  $("theme-toggle").addEventListener("click", () => {
+    store.set(KEY_THEME, document.documentElement.dataset.theme === "dark" ? "light" : "dark");
     applyTheme();
-  }));
+  });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
   bindNavbar();
   $("account-form").addEventListener("submit", (e) => {
