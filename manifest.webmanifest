@@ -1,14 +1,24 @@
 {
-  "name": "Valorant tracker",
-  "short_name": "Valorant",
-  "description": "Personal Valorant match tracker",
+  "name": "Valtrack",
+  "short_name": "Valtrack",
+  "description": "Analyse your Valorant games and see your progress.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#F2EFE8",
   "theme_color": "#F2EFE8",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Valorant tracker</title>
+<title>Valtrack · Analyse your games, see your progress</title>
 <meta name="theme-color" content="#F2EFE8">
+<meta name="description" content="Valtrack: analyse your Valorant games and see your progress.">
+<meta name="apple-mobile-web-app-title" content="Valtrack">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <script>/* set the theme before first paint (script.js keeps it updated) */
@@ -17,8 +19,9 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 
   <!-- First screen: choose who to track -->
   <section id="welcome" class="welcome" hidden>
-    <h1>Valorant tracker</h1>
-    <p class="muted">Enter your username and tag to see your recent matches.</p>
+    <h1 class="wordmark">Valtrack</h1>
+    <p class="tagline"><span>Analyse your games.</span> <span>See your progress.</span></p>
+    <p class="muted">Enter your username and tag to get started.</p>
     <form id="account-form" class="id-form">
       <label class="grow">Username <input id="riot-name" placeholder="lev0nt" autocomplete="off" spellcheck="false" required></label>
       <span class="hash" aria-hidden="true">#</span>
@@ -35,7 +38,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
   <div id="app" hidden>
 
     <header class="topbar">
-      <a class="brand" href="./">Valorant<span class="brand-tail"> tracker</span></a>
+      <a class="brand" href="./"><span class="brand-name">Valtrack</span><span class="brand-sub">Analyse your games. See your progress.</span></a>
       <div id="navbar" class="navbar">
         <nav class="tabs" role="tablist" aria-label="Sections">
           <button id="tabbtn-overview" class="tab" role="tab" type="button" aria-controls="tab-overview" aria-selected="true" data-tab="overview">Overview</button>
@@ -209,7 +212,10 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 
   </div>
 
-  <p class="foot">Match data from the unofficial HenrikDev API. Not affiliated with Riot Games. <button id="storage-link" class="link" type="button">Where is my data saved?</button></p>
+  <footer class="foot">
+    <p class="made">Made by lev0nt#101 for his friends.</p>
+    <p>Match data from the unofficial HenrikDev API. Not affiliated with Riot Games. <button id="storage-link" class="link" type="button">Where is my data saved?</button></p>
+  </footer>
 </main>
 
 <dialog id="match-detail" class="sheet" aria-labelledby="md-title">

@@ -131,7 +131,7 @@ function smoothPath(pts) {
 }
 
 // One smooth trend line (5-match average) with a node for every match, grid lines and labelled axis.
-function chartSvg(values, label, { ref, min, max, fmt, meta = [], onHover }) {
+function chartSvg(values, label, { ref, min, max, fmt, meta = [], onShow, onHide }) {
   const W = 340, H = 150, L = 38, R = 12, T = 14, B = 12;
   const last = values.length - 1;
   const lo = min ?? Math.min(...values);
@@ -155,14 +155,32 @@ function chartSvg(values, label, { ref, min, max, fmt, meta = [], onHover }) {
 
   values.forEach((v, i) => {
     const point = svgEl("g", { class: "chart-point" }, svg);
-    svgEl("circle", { class: "chart-hit", cx: n(x(i)), cy: n(y(v)), r: 9 }, point);
+    const hit = svgEl("circle", { class: "chart-hit", cx: n(x(i)), cy: n(y(v)), r: 9 }, point);
     svgEl("circle", { class: `chart-node ${(meta[i] && meta[i].tone) || ""}${i === last ? " last" : ""}`, cx: n(x(i)), cy: n(y(v)), r: i === last ? 4.5 : 3.2 }, point);
-    svgEl("title", {}, point).textContent = `${fmt(v)}${meta[i] ? " · " + meta[i].label : ""}`;
-    point.addEventListener("pointerenter", () => onHover(i));
-    point.addEventListener("pointerleave", () => onHover(null));
-    point.addEventListener("click", () => onHover(i)); // tap on a phone
+    point.addEventListener("pointerenter", () => onShow(i, hit));
+    point.addEventListener("pointerleave", (e) => { if (e.pointerType !== "touch") onHide(); }); // a tap on a phone stays until you tap elsewhere
+    point.addEventListener("click", () => onShow(i, hit));
   });
   return svg;
+}
+
+// The bubble that follows the node you point at: it glides between nodes, flips below near the top and stays inside the card.
+function placeBubble(card, bubble, anchor, value, info) {
+  bubble.replaceChildren(el("b", "", value));
+  if (info) bubble.append(el("span", "bubble-label", info.label));
+  bubble.dataset.tone = (info && info.tone) || "";
+  const c = card.getBoundingClientRect();
+  const a = anchor.getBoundingClientRect();
+  const w = bubble.offsetWidth, h = bubble.offsetHeight;
+  const x = Math.min(Math.max(a.left + a.width / 2 - c.left, w / 2 + 6), c.width - w / 2 - 6);
+  const above = a.top - c.top - h - 12 > 0;
+  const wasShown = bubble.classList.contains("show");
+  if (!wasShown) bubble.classList.add("snap"); // first appearance: fade in place instead of gliding in from the corner
+  bubble.classList.toggle("below", !above);
+  bubble.style.left = `${x}px`;
+  bubble.style.top = `${above ? a.top - c.top - 6 : a.bottom - c.top + 6}px`;
+  if (!wasShown) { void bubble.offsetWidth; bubble.classList.remove("snap"); }
+  bubble.classList.add("show");
 }
 
 function chartCard(title, values, fmt, opts = {}) {
@@ -175,12 +193,18 @@ function chartCard(title, values, fmt, opts = {}) {
     return card;
   }
   const meta = opts.meta || [];
-  const last = values.length - 1;
-  const detail = (i) => `${fmt(values[i])}${meta[i] ? " · " + meta[i].label : ""}`;
-  const resting = `Latest: ${detail(last)}`;
-  const readout = el("p", "chart-readout", resting);
+  const bubble = el("div", "chart-bubble");
+  bubble.setAttribute("aria-hidden", "true"); // the same numbers are in the chart label for screen readers
   const foot = opts.foot ?? `Average ${fmt(average(values))} over ${values.length} matches`;
-  card.append(readout, chartSvg(values, `${title}: ${foot}`, { ...opts, fmt, onHover: (i) => { readout.textContent = i === null ? resting : detail(i); } }), el("p", "chart-foot", foot));
+  card.append(
+    chartSvg(values, `${title}: ${foot}`, {
+      ...opts, fmt, meta,
+      onShow: (i, anchor) => placeBubble(card, bubble, anchor, fmt(values[i]), meta[i]),
+      onHide: () => bubble.classList.remove("show"),
+    }),
+    el("p", "chart-foot", foot),
+    bubble
+  );
   return card;
 }
 
@@ -273,6 +297,9 @@ function renderGoal() {
 }
 
 function bindInsights() {
+  document.addEventListener("pointerdown", (e) => {
+    if (!e.target.closest(".chart-point")) document.querySelectorAll(".chart-bubble.show").forEach((b) => b.classList.remove("show"));
+  });
   const select = $("goal-select");
   for (let i = 0; i <= 24; i++) select.append(new Option(rankNameAt(i), rankNameAt(i)));
   select.addEventListener("change", () => {

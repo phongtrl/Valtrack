@@ -1,4 +1,4 @@
-/* Valorant tracker styles. Order: tokens, base, controls, layout, components, comparison, responsive. */
+/* Valtrack styles. Order: tokens, base, controls, layout, components, comparison, responsive. */
 
 /* ---------- Tokens ---------- */
 :root {
@@ -6,6 +6,7 @@
   --win: #4F7358; --loss: #A9503F; --wood: #8D7857; --line-strong: #BDBBB0;
   --tint-bg: #E6EBE3; --tint-line: #C5D0C4;
   --shadow: rgba(35, 37, 31, .14);
+  --bubble-alpha: 30%; /* how solid the chart popup background is */
   color-scheme: light;
   --serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Iowan Old Style", Georgia, serif;
   --sans: "Hiragino Sans", "Yu Gothic UI", "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
@@ -72,6 +73,9 @@ label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 
 /* ---------- Welcome ---------- */
 .welcome { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 40px 0; text-align: center; }
+.wordmark { font-size: clamp(2.6rem, 9vw, 3.6rem); letter-spacing: .01em; }
+.tagline span { display: inline-block; } /* a line break only ever falls between the two sentences */
+.tagline { max-width: 30ch; font-size: 1.1rem; line-height: 1.4; color: var(--ink); }
 .welcome .id-form { width: min(500px, 100%); margin-top: 12px; }
 .welcome input { text-align: center; font-size: 1.1rem; }
 #favorites-panel { display: grid; gap: 8px; justify-items: center; width: min(560px, 100%); margin-top: 12px; }
@@ -79,7 +83,9 @@ label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 
 /* ---------- Top bar and navigation ---------- */
 .topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: stretch; gap: 28px; min-height: 60px; margin: 0 calc(-1 * var(--edge)); padding: 0 var(--edge); background: var(--paper); border-bottom: 1px solid var(--line); }
-.brand { align-self: center; font: 1.1rem var(--serif); color: inherit; text-decoration: none; white-space: nowrap; }
+.brand { display: flex; flex-direction: column; justify-content: center; align-self: center; line-height: 1.2; color: inherit; text-decoration: none; white-space: nowrap; }
+.brand-name { font: 1.25rem var(--serif); letter-spacing: .01em; }
+.brand-sub { font-size: .68rem; color: var(--muted); }
 .nav-toggle { display: none; }
 .navbar { display: flex; flex: 1; align-items: stretch; justify-content: space-between; gap: 20px; min-width: 0; }
 .tabs { display: flex; gap: 2px; }
@@ -238,7 +244,17 @@ tbody tr:hover { background: rgba(141,120,87,.07); }
 .chart-node.loss { fill: var(--loss); }
 .chart-node.last { stroke: var(--ink); }
 .chart-point:hover .chart-node { transform: scale(1.5); }
-.chart-readout { min-height: 1.3em; margin-bottom: 4px; font-size: .8rem; color: var(--muted); }
+.chart { position: relative; }
+.chart-bubble { position: absolute; top: 0; left: 0; z-index: 5; min-width: 92px; padding: 8px 12px; text-align: center; white-space: nowrap; line-height: 1.3; color: var(--ink); background: color-mix(in srgb, var(--card) var(--bubble-alpha), transparent); backdrop-filter: blur(12px) saturate(1.15); border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent); border-radius: 12px; box-shadow: 0 8px 24px var(--shadow); opacity: 0; transform: translate(-50%, calc(-100% + 8px)) scale(.94); transform-origin: 50% 100%; pointer-events: none; transition: left .16s ease, top .16s ease, opacity .16s ease, transform .2s cubic-bezier(.2, .8, .3, 1); }
+.chart-bubble.show { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+.chart-bubble.below { transform: translate(-50%, -8px) scale(.94); transform-origin: 50% 0; }
+.chart-bubble.below.show { transform: translate(-50%, 0) scale(1); }
+.chart-bubble.snap { transition: opacity .16s ease, transform .2s cubic-bezier(.2, .8, .3, 1); }
+.chart-bubble b { display: block; font: 400 1.15rem/1.2 var(--serif); font-variant-numeric: tabular-nums; }
+.bubble-label { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--ink); opacity: .78; }
+.bubble-label::before { content: ""; width: 6px; height: 6px; background: var(--muted); border-radius: 50%; }
+.chart-bubble[data-tone="win"] .bubble-label::before { background: var(--win); }
+.chart-bubble[data-tone="loss"] .bubble-label::before { background: var(--loss); }
 .chart-foot { margin-top: 6px; font-size: .76rem; color: var(--muted); }
 .backup { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 16px; }
 .backup-actions { display: flex; gap: 8px; }
@@ -280,6 +296,8 @@ dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height
 .duel-score { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---------- Footer and dialog ---------- */
+.foot p + p { margin-top: 4px; }
+.foot .made { color: var(--ink); opacity: .8; }
 .foot { margin-top: 64px; padding-top: 18px; text-align: center; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--line); }
 dialog { max-width: 420px; padding: 24px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
 dialog::backdrop { background: rgba(35,37,31,.4); }
@@ -318,11 +336,8 @@ dialog p { margin-bottom: 18px; }
   .menu { position: static; width: auto; padding: 12px 4px 4px; background: transparent; backdrop-filter: none; border: 0; border-radius: 0; box-shadow: none; animation: none; }
 }
 
-@media (max-width: 400px) {
-  .brand-tail { display: none; }
-}
-
 @media (max-width: 720px) {
+  .brand-sub { display: none; } /* the top bar is tight on phones; the subtitle lives on the start screen */
   .hero { grid-template-columns: 1fr; gap: 24px; justify-items: center; padding: 20px; }
   .stats { width: 100%; }
   .rank-panel, .two { grid-template-columns: 1fr; }

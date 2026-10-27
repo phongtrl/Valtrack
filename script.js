@@ -1,4 +1,4 @@
-/* Valorant tracker. Works when opened straight from the file (no server needed). */
+/* Valtrack. Works when opened straight from the file (no server needed). */
 
 const API = "https://api.henrikdev.xyz";
 // Convenience default for this personal static build. Anyone who can access the source can read this key.
