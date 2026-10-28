@@ -63,7 +63,7 @@ function renderSession(view) {
     const s = summarize(played);
     const change = rrHistory.filter((h) => localDay(h.time) === today).reduce((t, h) => t + h.change, 0);
     const line = el("div", "session-main");
-    line.append(el("b", "", `${s.wins} W – ${s.losses} L`), el("span", "", `K/D ${s.kd.toFixed(2)}`), el("span", "", `ACS ${Math.round(s.acs)}`));
+    line.append(el("b", "", `${s.wins} W – ${s.losses} L${s.draws ? ` – ${s.draws} D` : ""}`), el("span", "", `K/D ${s.kd.toFixed(2)}`), el("span", "", `ACS ${Math.round(s.acs)}`));
     if (rrHistory.length) line.append(el("span", change >= 0 ? "r-win" : "r-loss", `${change > 0 ? "+" : ""}${change} RR`));
     box.append(line);
   }

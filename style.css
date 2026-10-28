@@ -86,6 +86,7 @@ label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 .brand { display: flex; flex-direction: column; justify-content: center; align-self: center; line-height: 1.2; color: inherit; text-decoration: none; white-space: nowrap; }
 .brand-name { font: 1.25rem var(--serif); letter-spacing: .01em; }
 .brand-sub { font-size: .68rem; color: var(--muted); }
+.brand-sub span { display: inline-block; }
 .nav-toggle { display: none; }
 .navbar { display: flex; flex: 1; align-items: stretch; justify-content: space-between; gap: 20px; min-width: 0; }
 .tabs { display: flex; gap: 2px; }
@@ -268,7 +269,7 @@ tbody tr:hover { background: rgba(141,120,87,.07); }
 tbody tr[data-match] { cursor: pointer; }
 td.row-action { text-align: right; }
 button.small { padding: 4px 12px; font-size: .8rem; }
-body:has(dialog[open]) { overflow: hidden; }
+body:has(dialog:modal) { overflow: hidden; }
 dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height: min(92vh, 920px); padding: 0; overflow: auto; }
 .sheet-inner { padding: 22px 24px 28px; }
 .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
@@ -295,12 +296,28 @@ dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height
 .duel-row .bar.idle { background: var(--line); }
 .duel-score { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+/* ---------- Help and FAQ ---------- */
+.help h3 { margin: 24px 0 8px; font-size: 1.05rem; }
+.help h3:first-child { margin-top: 0; }
+.help ol, .help ul { display: grid; gap: 6px; margin: 0; padding-left: 20px; font-size: .94rem; }
+.faq details { padding: 12px 0; border-top: 1px solid var(--line); }
+.faq details:last-child { border-bottom: 1px solid var(--line); }
+.faq summary { display: flex; justify-content: space-between; gap: 12px; font-size: .94rem; font-weight: 500; cursor: pointer; list-style: none; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-weight: 400; color: var(--muted); }
+.faq details[open] summary::after { content: "–"; }
+.faq p { margin-top: 8px; font-size: .9rem; color: var(--muted); }
+
 /* ---------- Footer and dialog ---------- */
 .foot p + p { margin-top: 4px; }
 .foot .made { color: var(--ink); opacity: .8; }
 .foot { margin-top: 64px; padding-top: 18px; text-align: center; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--line); }
 dialog { max-width: 420px; padding: 24px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
 dialog::backdrop { background: rgba(35,37,31,.4); }
+dialog.notice { position: fixed; inset: auto var(--edge) 16px auto; width: min(320px, calc(100% - 2 * var(--edge))); margin: 0; padding: 14px 16px; font-size: .82rem; line-height: 1.5; box-shadow: 0 10px 28px var(--shadow); z-index: 90; }
+dialog.notice h2 { margin-bottom: 6px; font-size: 1rem; }
+dialog.notice p { margin-bottom: 12px; }
+dialog.notice button { padding: 6px 14px; font-size: .8rem; }
 dialog h2 { margin-bottom: 10px; font-size: 1.25rem; }
 dialog p { margin-bottom: 18px; }
 
@@ -336,8 +353,14 @@ dialog p { margin-bottom: 18px; }
   .menu { position: static; width: auto; padding: 12px 4px 4px; background: transparent; backdrop-filter: none; border: 0; border-radius: 0; box-shadow: none; animation: none; }
 }
 
+@media (max-width: 350px) {
+  .nav-label { display: none; }
+  .icon-only { width: 34px; }
+}
+
 @media (max-width: 720px) {
-  .brand-sub { display: none; } /* the top bar is tight on phones; the subtitle lives on the start screen */
+  .brand-sub { font-size: .62rem; line-height: 1.25; }
+  .brand-sub span { display: block; } /* one sentence per line, so it never wraps awkwardly */
   .hero { grid-template-columns: 1fr; gap: 24px; justify-items: center; padding: 20px; }
   .stats { width: 100%; }
   .rank-panel, .two { grid-template-columns: 1fr; }
@@ -368,5 +391,8 @@ dialog p { margin-bottom: 18px; }
   .duel-row .bar { grid-column: 1 / -1; order: 3; }
 }
 
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+  .tool.is-loading .refresh { animation: spin 1.6s linear infinite !important; } /* a loading spinner is feedback, so it stays, only slower */
+}
 #cmp-result.stack { --gap: 14px; }

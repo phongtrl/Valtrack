@@ -104,10 +104,13 @@ function saveMatches() {
   }
 }
 
+// Earlier versions saved tied games as losses; the score tells the truth.
+const normalizeMatch = (m) => (m && m.result === "loss" && m.roundsWon === m.roundsLost ? { ...m, result: "draw" } : m);
+
 function loadMatches() {
   try {
     const parsed = JSON.parse(store.get(matchKey()) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeMatch) : [];
   } catch (e) {
     return [];
   }
@@ -327,7 +330,8 @@ function parseMatch(m) {
   const played = (Number.isFinite(won) ? won : 0) + (Number.isFinite(lost) ? lost : 0);
 
   let result = "draw";
-  if (team?.won === true || team?.has_won === true) result = "win";
+  if (played > 0 && won === lost && team?.won !== true && team?.has_won !== true) result = "draw"; // a tied score is a draw, although the API marks both teams as not winning
+  else if (team?.won === true || team?.has_won === true) result = "win";
   else if (team?.won === false || team?.has_won === false) result = "loss";
   else if (played > 0) result = won > lost ? "win" : won < lost ? "loss" : "draw";
 
@@ -411,10 +415,18 @@ async function fetchRankStats(force = false) {
 
 let syncing = false;
 
+// Gives a tap on Fetch latest visible feedback even when the data is fresh and no request is needed.
+function spinBriefly(ms = 700) {
+  const button = $("sync");
+  button.classList.add("is-loading");
+  setTimeout(() => { if (!syncing) button.classList.remove("is-loading"); }, ms);
+}
+
 async function syncMatches(manual = true) {
   if (syncing) return;
   const age = Date.now() - lastFetched("matches");
   if (age < (manual ? COOLDOWN_MS : FRESH_MS)) {
+    if (manual) spinBriefly();
     setStatus(`Up to date. Last fetched ${ago(age)}, ${matches.length} matches saved.${manual ? " You can fetch again in a minute." : ""}`);
     return;
   }
@@ -631,6 +643,7 @@ function bindTabs() {
 function bindEvents() {
   bindTabs();
   bindMatchDetail();
+  bindHelp();
   bindInsights();
   $("theme-toggle").addEventListener("click", () => {
     store.set(KEY_THEME, document.documentElement.dataset.theme === "dark" ? "light" : "dark");
@@ -701,7 +714,7 @@ function bindEvents() {
       const ids = new Set(matches.map((m) => m.id));
       let added = 0;
       incoming.forEach((m) => {
-        if (isValidMatch(m) && !ids.has(m.id)) { matches.push(m); ids.add(m.id); added++; }
+        if (isValidMatch(m) && !ids.has(m.id)) { matches.push(normalizeMatch(m)); ids.add(m.id); added++; }
       });
       if (Array.isArray(data.rr) && lower(data.account) === lower(account.name + "#" + account.tag)) {
         mergeRr(data.rr.filter((h) => h && typeof h.id === "string" && Number.isFinite(h.time)));
@@ -755,9 +768,10 @@ function summarize(list) {
   const n = list.length;
   const wins = list.filter((m) => m.result === "win").length;
   const losses = list.filter((m) => m.result === "loss").length;
+  const draws = list.filter((m) => m.result === "draw").length;
   const kills = sum(list, "kills");
   const deaths = sum(list, "deaths");
-  return { n, wins, losses, winRate: n ? wins / n : 0, kd: deaths ? kills / deaths : kills, acs: n ? sum(list, "acs") / n : 0 };
+  return { n, wins, losses, draws, winRate: n ? wins / n : 0, kd: deaths ? kills / deaths : kills, acs: n ? sum(list, "acs") / n : 0 };
 }
 
 function groupBy(key, list) {
@@ -785,7 +799,8 @@ function render() {
   const view = scope();
   const s = summarize(view);
   $("s-matches").textContent = s.n;
-  $("s-record").textContent = `${s.wins} – ${s.losses}`;
+  $("s-record").textContent = `${s.wins} – ${s.losses}${s.draws ? ` – ${s.draws}` : ""}`;
+  $("s-record").nextElementSibling.textContent = s.draws ? "Wins – losses – draws" : "Wins and losses";
   $("s-kd").textContent = s.kd.toFixed(2);
   $("s-acs").textContent = Math.round(s.acs);
   $("ring-pct").textContent = pct(s.winRate);
@@ -1251,6 +1266,18 @@ function renderMatchDetail() {
   dialog.scrollTop = scroll;
 }
 
+function bindHelp() {
+  const dialog = $("help");
+  document.querySelectorAll("[data-open-help]").forEach((b) => b.addEventListener("click", () => {
+    closeAccountMenu();
+    setNav(false);
+    dialog.showModal();
+    dialog.scrollTop = 0;
+  }));
+  $("help-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
+}
+
 function bindMatchDetail() {
   $("log").addEventListener("click", (e) => {
     const target = e.target.closest("[data-match]");
@@ -1274,10 +1301,10 @@ $("log-toggle").addEventListener("click", () => {
 
 function setupStorageNotice() {
   const dialog = $("storage-notice");
-  if (!dialog || typeof dialog.showModal !== "function") return;
-  $("storage-link").addEventListener("click", () => dialog.showModal());
+  if (!dialog || typeof dialog.show !== "function") return;
+  $("storage-link").addEventListener("click", () => dialog.show()); // a small card that leaves the page usable
   if (store.get("vt:notice-seen")) return;
-  dialog.showModal();
+  dialog.show();
   dialog.addEventListener("close", () => store.set("vt:notice-seen", "1"), { once: true });
 }
 
