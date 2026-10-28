@@ -288,6 +288,12 @@ dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height
 .pl-text { min-width: 0; }
 .pl-text strong { display: block; font-weight: 500; overflow-wrap: anywhere; }
 .pl-text small { display: block; font-size: .76rem; color: var(--muted); }
+.pl-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 12px 10px; }
+.pl-actions .fav { gap: 6px; }
+.pl-actions .fav .icon { width: 15px; height: 15px; }
+.pl-actions .fav[aria-pressed="true"] { color: var(--wood); }
+.pl-actions .fav[aria-pressed="true"] .icon { fill: currentColor; }
+#back-link { margin-bottom: 6px; font-size: .86rem; color: var(--muted); }
 .duels { margin-top: 32px; }
 .duels h3 { font-size: 1.1rem; }
 .duel-row { display: grid; grid-template-columns: minmax(110px, 1.2fr) minmax(0, 2fr) 96px; gap: 14px; align-items: center; padding: 9px 0; font-size: .92rem; border-top: 1px solid var(--line); }

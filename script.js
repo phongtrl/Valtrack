@@ -8,6 +8,7 @@ const KEY_API = "vt:apikey";
 const KEY_MATCHES = "vt:matches:";
 const KEY_FAVORITES = "vt:favorites";
 const KEY_TAB = "vt:tab";
+const KEY_PREVIOUS = "vt:previous";
 const KEY_THEME = "vt:theme";
 const KEY_BACKUP = "vt:backup";
 const KEY_SNOOZE = "vt:backup-snooze";
@@ -142,6 +143,7 @@ function init() {
 
   let saved = null;
   try { saved = JSON.parse(store.get(KEY_ACCOUNT)); } catch (e) { /* none */ }
+  try { previousAccount = JSON.parse(store.get(KEY_PREVIOUS)); } catch (e) { previousAccount = null; }
   if (saved && saved.name && saved.tag) openAccount(saved, true);
   else showWelcome();
 }
@@ -498,15 +500,18 @@ function updateFavoriteButton() {
   button.setAttribute("aria-label", active ? "Remove from favorites" : "Add to favorites");
   button.title = active ? "Remove from favorites" : "Add to favorites";
 }
-function toggleCurrentFavorite() {
-  if (!account) return;
+function toggleFavorite(acc) {
+  const was = isFavorite(acc);
   let favorites = getFavorites();
-  if (isFavorite()) favorites = favorites.filter(f => !sameId(f, account));
-  else favorites.push({ name: account.name, tag: account.tag, region: account.region || null });
+  if (was) favorites = favorites.filter(f => !sameId(f, acc));
+  else favorites.push({ name: acc.name, tag: acc.tag, region: acc.region || null });
   store.set(KEY_FAVORITES, JSON.stringify(favorites));
   updateFavoriteButton();
   renderFavorites();
-  setStatus(isFavorite() ? "Added to favorites on this browser." : "Removed from favorites.");
+  setStatus(was ? "Removed from favorites." : `Added ${acc.name}#${acc.tag} to favorites.`);
+}
+function toggleCurrentFavorite() {
+  if (account) toggleFavorite(account);
 }
 function renderFavorites() {
   renderCmpFavorites();
@@ -645,6 +650,11 @@ function bindEvents() {
   bindMatchDetail();
   bindHelp();
   bindInsights();
+  $("back-link").addEventListener("click", () => {
+    const home = previousAccount;
+    setPrevious(null);
+    openAccount({ ...home }, true);
+  });
   $("theme-toggle").addEventListener("click", () => {
     store.set(KEY_THEME, document.documentElement.dataset.theme === "dark" ? "light" : "dark");
     applyTheme();
@@ -813,6 +823,7 @@ function render() {
   renderLog(view);
   renderInsights(view);
   renderBackupNote();
+  renderBackLink();
   renderCmpFavorites();
 }
 
@@ -909,6 +920,7 @@ function renderLog(visibleMatches) {
 }
 
 let modeChosen = false;
+let previousAccount = null; // the profile you came from while looking at another player
 let rankNow = null; // { name, rr, score } for the tracked account, set by fetchRankStats
 
 /* ---------- Rank badges ---------- */
@@ -1186,6 +1198,28 @@ function playerRow(p, i) {
   return row;
 }
 
+const STAR_SVG = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.6 5.3 5.8.9-4.2 4.1 1 5.8L12 16.9l-5.2 2.8 1-5.8-4.2-4.1 5.8-.9z"/></svg>';
+
+// Shown right under the selected player: open their profile, or save them as a favorite.
+function playerActions(p) {
+  const bar = el("div", "pl-actions");
+  const acc = { name: p.name, tag: p.tag, region: null };
+  if (!isMine(p)) {
+    const view = el("button", "quiet small", "View profile");
+    view.type = "button";
+    view.addEventListener("click", () => viewProfile(p));
+    bar.append(view);
+  }
+  const on = isFavorite(acc);
+  const fav = el("button", "quiet small fav");
+  fav.type = "button";
+  fav.setAttribute("aria-pressed", String(on));
+  fav.innerHTML = `${STAR_SVG}<span>${on ? "Favorited" : "Favorite"}</span>`;
+  fav.addEventListener("click", () => { toggleFavorite(acc); renderMatchDetail(); });
+  bar.append(fav);
+  return bar;
+}
+
 function teamEl(d, id, label) {
   const box = el("section", "team");
   const head = el("div", "team-head");
@@ -1202,14 +1236,17 @@ function teamEl(d, id, label) {
     .map((p, i) => [p, i])
     .filter(([p]) => p.team === id)
     .sort((a, b) => b[0].acs - a[0].acs)
-    .forEach(([p, i]) => box.append(playerRow(p, i)));
+    .forEach(([p, i]) => {
+      box.append(playerRow(p, i));
+      if (i === detailPick) box.append(playerActions(p));
+    });
   return box;
 }
 
 function duelsEl(d) {
   const sel = d.players[detailPick];
   const box = el("section", "duels");
-  box.append(el("h3", "", `Duels: ${sel.name}`), el("p", "hint", "Kills against each opponent, and how often they killed back. Select any player above to see theirs."));
+  box.append(el("h3", "", `Duels: ${sel.name}`), el("p", "hint", "Kills against each opponent, and how often they killed back. Select a player above to see their duels, open their profile or save them as a favorite."));
   if (!d.duels.length) {
     box.append(el("p", "empty", "The API didn't return kill details for this match."));
     return box;
@@ -1276,6 +1313,26 @@ function bindHelp() {
   }));
   $("help-close").addEventListener("click", () => dialog.close());
   dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
+}
+
+function setPrevious(acc) {
+  previousAccount = acc;
+  if (acc) store.set(KEY_PREVIOUS, JSON.stringify(acc)); else store.remove(KEY_PREVIOUS);
+}
+
+function viewProfile(p) {
+  if (!previousAccount && account && !sameId(account, p)) setPrevious({ ...account });
+  $("match-detail").close();
+  showTab("overview");
+  openAccount({ name: p.name, tag: p.tag, region: null }, true);
+}
+
+function renderBackLink() {
+  const link = $("back-link");
+  const away = !!previousAccount && !!account && !sameId(previousAccount, account);
+  link.hidden = !away;
+  if (away) link.textContent = `← Back to ${previousAccount.name}#${previousAccount.tag}`;
+  else if (previousAccount) setPrevious(null); // you are back home
 }
 
 function bindMatchDetail() {

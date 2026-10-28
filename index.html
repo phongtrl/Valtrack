@@ -95,6 +95,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 
     <div class="profile">
       <div>
+        <button id="back-link" class="link" type="button" hidden></button>
         <h1 id="who"></h1>
         <p id="status" role="status" aria-live="polite"></p>
       </div>
@@ -238,7 +239,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <h3>Around the app</h3>
       <ul>
         <li><b>Overview:</b> win rate, record, K/D, ACS, current and peak rank, today's session and your recent form.</li>
-        <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who.</li>
+        <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
         <li><b>Stats:</b> win rate and K/D per agent and map, and the players you team up with.</li>
         <li><b>Progress:</b> trend charts (hover or tap a dot for details), rank history and a rank goal estimate.</li>
         <li><b>Compare:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
@@ -253,6 +254,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <details><summary>Can I see live matches?</summary><p>No. There is no public live data for Valorant. Matches show up after they have finished, the next time you fetch.</p></details>
         <details><summary>What do ACS, ADR, HS%, FB and FD mean?</summary><p>ACS is your average combat score per round, ADR your average damage per round, and HS% the share of your shots that hit the head. FB and FD are first bloods and first deaths: who got the first kill, or died first, in a round.</p></details>
         <details><summary>How accurate are the catch-up and rank goal estimates?</summary><p>They are rough. They assume about 20 RR per win or loss, treat Immortal and Radiant approximately, and real gains vary with how you play.</p></details>
+        <details><summary>What happens when I open another player's profile?</summary><p>Valtrack loads their matches and rank the same way as yours, and saves them in this browser. Use the "Back to" link above the name, or the Account menu, to return. While you look at them, Compare and Rank goal treat them as the main player.</p></details>
         <details><summary>Why are older matches missing player details?</summary><p>Player details are only saved for matches fetched with the latest version, and the data source only returns recent matches. Press refresh to fill in your latest ones.</p></details>
         <details><summary>How are draws counted?</summary><p>A tied score is shown as a draw. It counts as neither a win nor a loss.</p></details>
         <details><summary>Can I install Valtrack as an app?</summary><p>Yes, when you open it from a web address or localhost. Use your browser's Install or Add to Home Screen option. It then opens like an app and shows your saved data offline.</p></details>
