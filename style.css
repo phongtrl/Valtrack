@@ -259,6 +259,19 @@ tbody tr:hover { background: rgba(141,120,87,.07); }
 .chart-foot { margin-top: 6px; font-size: .76rem; color: var(--muted); }
 .backup { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 16px; }
 .backup-actions { display: flex; gap: 8px; }
+#goal-result.stack { --gap: 14px; }
+.goal-progress { display: grid; gap: 8px; }
+.goal-bar { height: 8px; overflow: hidden; background: var(--line); border-radius: 4px; }
+.goal-bar .fill { border-radius: 4px; transition: width .6s ease; }
+.goal-caption { display: flex; justify-content: space-between; gap: 12px; font-size: .86rem; color: var(--muted); }
+.goal-next { padding: 20px; }
+.goal-next h3 { margin-bottom: 12px; font-size: 1.1rem; }
+.goal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.goal-stats b { display: block; font: 400 1.9rem/1.1 var(--serif); font-variant-numeric: tabular-nums; }
+.goal-stats span { font-size: .84rem; color: var(--muted); }
+.goal-verdict { margin: 12px 0 10px; }
+.goal-next svg { display: block; width: 100%; height: auto; }
+.est small { display: block; font-size: .74rem; color: var(--muted); }
 .goal-form { max-width: 260px; margin: 8px 0 18px; }
 
 /* ---------- Loading placeholders ---------- */
@@ -362,6 +375,10 @@ dialog p { margin-bottom: 18px; }
 @media (max-width: 350px) {
   .nav-label { display: none; }
   .icon-only { width: 34px; }
+}
+
+@media (max-width: 640px) {
+  .goal-stats { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 720px) {

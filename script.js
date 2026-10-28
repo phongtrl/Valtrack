@@ -958,7 +958,6 @@ function rankBadge(name, width = 44) {
 
 /* ---------- Compare ranks (rough estimates) ---------- */
 
-const RR_PER_GAME = 20; // rough size of a win or loss in RR
 
 async function loadRank(name, tag, region) {
   const data = await fetchMmr(name, tag, region || await lookupRegion(name, tag));
@@ -972,44 +971,6 @@ async function loadRank(name, tag, region) {
 function recentCompetitiveWinRate() {
   const list = byDate().filter((m) => lower(m.mode) === "competitive").slice(0, 20);
   return list.length >= 5 ? summarize(list).winRate : null;
-}
-
-function gamesFor(gap, winRate) {
-  const net = RR_PER_GAME * (2 * winRate - 1);
-  if (net <= 0) return null;
-  return Math.max(0, Math.round(gap / net / 5) * 5);
-}
-
-function gamesText(gap, winRate) {
-  const g = gamesFor(gap, winRate);
-  return g === null ? "Not reachable" : g < 5 ? "Under 5 games" : `About ${g} games`;
-}
-
-// Rows of [win rate, label] used by the compare tab and the rank goal.
-function rateRows(withMine) {
-  const rows = [[0.55, "55% win rate"], [0.6, "60% win rate"], [0.65, "65% win rate"]];
-  const mine = recentCompetitiveWinRate();
-  if (withMine && mine !== null) rows.unshift([mine, `Your recent win rate (${pct(mine)})`]);
-  return rows;
-}
-
-function catchupEl(title, sub, size, rows) {
-  const games = rows.map(([rate]) => gamesFor(size, rate));
-  const max = Math.max(1, ...games.filter((g) => g !== null));
-  const card = el("div", "cmp-catchup card");
-  card.append(el("h3", "", title), el("p", "sub", sub));
-  rows.forEach(([rate, label], i) => {
-    const g = games[i];
-    const bar = el("div", "bar");
-    const fill = el("div", "fill");
-    fill.style.width = g === null ? "0%" : Math.max(4, (g / max) * 100) + "%";
-    bar.append(fill);
-    const row = el("div", "cmp-row");
-    row.append(el("span", "", label), bar, el("span", "est" + (g === null ? " no" : ""), gamesText(size, rate)));
-    card.append(row);
-  });
-  card.append(el("p", "cmp-note", `Assumes about ±${RR_PER_GAME} RR per game. Immortal and Radiant are approximated, and real gains vary with performance.`));
-  return card;
 }
 
 function ladderEl(me, them) {
@@ -1088,7 +1049,8 @@ function renderCompare(me, them) {
     youTrail ? "Your catch-up estimate" : "Their catch-up estimate",
     `Rough number of games ${youTrail ? "you need" : "they need"} to close the gap`,
     size,
-    rateRows(youTrail)
+    rateRows(youTrail),
+    youTrail ? rrSwings() : typicalSwings() // your own history is only known for you
   ));
 }
 

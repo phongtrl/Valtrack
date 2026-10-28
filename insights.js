@@ -269,11 +269,121 @@ function renderTeammates(view) {
 
 /* ---------- Rank goal ---------- */
 
+/* ---------- Rank climb model ---------- */
+
+// Typical RR for a win or a loss when there is no saved history to learn from.
+const TYPICAL_SWING = [14, 17, 19, 20, 20, 21, 23, 26];
+const CLIMB_RUNS = 1500;
+const CLIMB_CAP = 150;
+
+const typicalSwings = () => ({ wins: TYPICAL_SWING, losses: TYPICAL_SWING, own: false });
+
+// What you really gain and lose per game, taken from your saved rank history.
+function rrSwings() {
+  const wins = [], losses = [];
+  rrHistory.slice(0, 40).forEach((h) => {
+    if (h.change > 0) wins.push(h.change);
+    else if (h.change < 0) losses.push(-h.change);
+  });
+  return wins.length >= 4 && losses.length >= 4 ? { wins, losses, own: true } : typicalSwings();
+}
+
+// Seeded, so the same question always gives the same answer.
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Plays the climb many times. Every game is a win (worth one of your usual wins) with probability winRate, otherwise a loss.
+// Returns the median number of games and how many games cover 80% of the runs, or null when fewer than half of the runs get there.
+function simulateClimb(gap, winRate, swings) {
+  const rand = seededRandom(Math.round(gap * 997 + winRate * 100003));
+  const pick = (list) => list[Math.floor(rand() * list.length)];
+  const reached = new Array(CLIMB_CAP + 1).fill(0);
+  for (let run = 0; run < CLIMB_RUNS; run++) {
+    let progress = 0;
+    for (let game = 1; game <= CLIMB_CAP; game++) {
+      progress += rand() < winRate ? pick(swings.wins) : -pick(swings.losses);
+      if (progress >= gap) { reached[game]++; break; }
+    }
+  }
+  let total = 0, median = null, p80 = null;
+  for (let game = 1; game <= CLIMB_CAP && p80 === null; game++) {
+    total += reached[game] / CLIMB_RUNS;
+    if (median === null && total >= 0.5) median = game;
+    if (total >= 0.8) p80 = game;
+  }
+  return median === null || median > 100 ? null : { median, p80 }; // beyond 100 games the estimate means little
+}
+
+const gamesLabel = (n) => {
+  const x = n < 20 ? n : Math.round(n / 5) * 5; // beyond 20 games the exact number means little
+  return x === 1 ? "1 game" : `${x} games`;
+};
+
+// Rows of [win rate, label] shared by the compare tab and the rank goal.
+function rateRows(withMine) {
+  const rows = [[0.5, "50% win rate"], [0.55, "55% win rate"], [0.6, "60% win rate"], [0.65, "65% win rate"]];
+  const mine = recentCompetitiveWinRate();
+  if (withMine && mine !== null) rows.unshift([mine, `Your recent win rate (${pct(mine)})`]);
+  return rows;
+}
+
+function catchupEl(title, sub, size, rows, swings) {
+  const results = rows.map(([rate]) => simulateClimb(size, rate, swings));
+  const max = Math.max(1, ...results.filter(Boolean).map((r) => r.median));
+  const card = el("div", "cmp-catchup card");
+  card.append(el("h3", "", title), el("p", "sub", sub));
+  rows.forEach(([, label], i) => {
+    const r = results[i];
+    const bar = el("div", "bar");
+    const fill = el("div", "fill");
+    fill.style.width = r ? Math.max(4, (r.median / max) * 100) + "%" : "0%";
+    bar.append(fill);
+    const est = el("span", "est" + (r ? "" : " no"));
+    est.append(document.createTextNode(r ? `About ${gamesLabel(r.median)}` : "Unlikely"));
+    if (r && r.p80) est.append(el("small", "", `80% within ${gamesLabel(r.p80)}`));
+    const row = el("div", "cmp-row");
+    row.append(el("span", "", label), bar, est);
+    card.append(row);
+  });
+  const basis = swings.own
+    ? `Based on your recent ranked games: wins average +${Math.round(average(swings.wins))} RR and losses −${Math.round(average(swings.losses))} RR.`
+    : "Assumes typical swings of about 20 RR for a win or a loss.";
+  card.append(el("p", "cmp-note", `${basis} Each row replays the climb ${CLIMB_RUNS.toLocaleString("en")} times. Immortal and Radiant are approximated, and demotion protection is ignored.`));
+  return card;
+}
+
 const rankNameAt = (i) => {
   if (i >= 24) return "Radiant";
   const tier = RANK_TIERS[Math.floor(i / 3)];
   return `${tier[0].toUpperCase()}${tier.slice(1)} ${(i % 3) + 1}`;
 };
+
+// Dot plot of your recent wins by RR gained, with the RR you need marked. Green dots would be enough.
+function winStrip(wins, gap) {
+  const W = 340, H = 72, L = 12, R = 12;
+  const lo = Math.min(...wins, gap) - 2, hi = Math.max(...wins, gap) + 2;
+  const x = (v) => (L + ((v - lo) / (hi - lo)) * (W - L - R)).toFixed(1);
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `Your recent wins gave ${Math.min(...wins)} to ${Math.max(...wins)} RR. You need ${gap}.` });
+  svgEl("line", { class: "chart-grid", x1: L, x2: W - R, y1: 54, y2: 54 }, svg);
+  svgEl("line", { class: "chart-ref", x1: x(gap), x2: x(gap), y1: 12, y2: 58 }, svg);
+  svgEl("text", { class: "chart-axis", x: x(gap), y: 8, "text-anchor": "middle" }, svg).textContent = `${gap} needed`;
+  const stack = new Map();
+  [...wins].sort((a, b) => a - b).forEach((v) => {
+    const level = stack.get(v) || 0;
+    stack.set(v, level + 1);
+    svgEl("circle", { class: "chart-node" + (v >= gap ? " win" : ""), cx: x(v), cy: Math.max(16, 48 - level * 9), r: 4 }, svg);
+  });
+  svgEl("text", { class: "chart-axis", x: L, y: 69 }, svg).textContent = `+${Math.min(...wins)}`;
+  svgEl("text", { class: "chart-axis", x: W - R, y: 69, "text-anchor": "end" }, svg).textContent = `+${Math.max(...wins)}`;
+  return svg;
+}
 
 function renderGoal() {
   const select = $("goal-select");
@@ -285,15 +395,48 @@ function renderGoal() {
   }
   const saved = store.get(KEY_GOAL);
   select.value = saved && rankIndex(saved) !== null ? saved : rankNameAt(Math.min(24, Math.floor(rankNow.score / 100) + 1));
-  const gap = rankIndex(select.value) * 100 - rankNow.score;
-  const now = el("p", "hint", `You are ${rankNow.name} with ${rankNow.rr} RR.`);
+  const target = rankIndex(select.value) * 100;
+  const gap = target - rankNow.score;
   if (gap <= 0) {
-    out.append(now, el("p", "cmp-summary card", `You are already at or above ${select.value}.`));
+    out.append(el("p", "cmp-summary card", `You are already at or above ${select.value}.`));
     return;
   }
-  const summary = el("div", "cmp-summary card");
-  summary.append(el("b", "", `≈ ${gap} RR`), el("span", "", `to reach ${select.value}`));
-  out.append(now, summary, catchupEl(`Games to reach ${select.value}`, "Rough number of games at different win rates", gap, rateRows(true)));
+
+  // Where you are on the way: from the start of your current rank to the target.
+  const start = Math.floor(rankNow.score / 100) * 100;
+  const progress = el("div", "goal-progress");
+  const bar = el("div", "goal-bar");
+  const fill = el("div", "fill");
+  fill.style.width = pct(Math.min(1, Math.max(0, (rankNow.score - start) / (target - start))));
+  bar.append(fill);
+  const caption = el("div", "goal-caption");
+  caption.append(el("span", "", `${rankNow.name}, ${rankNow.rr} RR`), el("span", "", `${gap} RR to ${select.value}`));
+  progress.append(bar, caption);
+
+  // The next game: would one win be big enough?
+  const swings = rrSwings();
+  const rate = recentCompetitiveWinRate();
+  const share = swings.wins.filter((v) => v >= gap).length / swings.wins.length;
+  const verdict = share >= 0.85 ? "A win will very likely take you there."
+    : share >= 0.6 ? "A win will likely take you there."
+    : share >= 0.3 ? "A win may take you there."
+    : share > 0 ? "A win is unlikely to be enough on its own."
+    : `One win is not enough. You need at least ${Math.ceil(gap / Math.max(...swings.wins))} wins.`;
+  const next = el("div", "goal-next card");
+  const stats = el("div", "goal-stats");
+  const stat = (value, text) => { const box = el("div"); box.append(el("b", "", value), el("span", "", text)); return box; };
+  stats.append(
+    stat(pct(share), `of your usual wins are worth ${gap} RR or more`),
+    stat(pct((rate ?? 0.5) * share), `chance to rank up next game at a ${pct(rate ?? 0.5)} win rate`)
+  );
+  next.append(el("h3", "", "Your next game"), stats, el("p", "goal-verdict", verdict));
+  if (swings.own) {
+    next.append(winStrip(swings.wins, gap), el("p", "chart-foot", `Your last ${swings.wins.length} wins by RR gained. Green dots would be enough.`));
+  } else {
+    next.append(el("p", "chart-foot", "There is no rank history yet, so a win is assumed to be worth about 14 to 26 RR."));
+  }
+
+  out.append(progress, next, catchupEl(`Games to reach ${select.value}`, "How many games it takes, at different win rates", gap, rateRows(true), swings));
 }
 
 function bindInsights() {
