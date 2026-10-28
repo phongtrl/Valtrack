@@ -6,7 +6,6 @@
   --win: #4F7358; --loss: #A9503F; --wood: #8D7857; --line-strong: #BDBBB0;
   --tint-bg: #E6EBE3; --tint-line: #C5D0C4;
   --shadow: rgba(35, 37, 31, .14);
-  --bubble-alpha: 30%; /* how solid the chart popup background is */
   color-scheme: light;
   --serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Iowan Old Style", Georgia, serif;
   --sans: "Hiragino Sans", "Yu Gothic UI", "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
@@ -244,18 +243,24 @@ tbody tr:hover { background: rgba(141,120,87,.07); }
 .chart-node.win { fill: var(--win); }
 .chart-node.loss { fill: var(--loss); }
 .chart-node.last { stroke: var(--ink); }
-.chart-point:hover .chart-node { transform: scale(1.5); }
+.chart-node.active { transform: scale(1.4); stroke: var(--ink); }
+.chart-guide { stroke: var(--line-strong); stroke-width: 1; opacity: 0; pointer-events: none; transition: opacity .12s ease-out, transform .12s ease-out; }
+.chart-guide.on { opacity: 1; }
 .chart { position: relative; }
-.chart-bubble { position: absolute; top: 0; left: 0; z-index: 5; min-width: 92px; padding: 8px 12px; text-align: center; white-space: nowrap; line-height: 1.3; color: var(--ink); background: color-mix(in srgb, var(--card) var(--bubble-alpha), transparent); backdrop-filter: blur(12px) saturate(1.15); border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent); border-radius: 12px; box-shadow: 0 8px 24px var(--shadow); opacity: 0; transform: translate(-50%, calc(-100% + 8px)) scale(.94); transform-origin: 50% 100%; pointer-events: none; transition: left .16s ease, top .16s ease, opacity .16s ease, transform .2s cubic-bezier(.2, .8, .3, 1); }
-.chart-bubble.show { opacity: 1; transform: translate(-50%, -100%) scale(1); }
-.chart-bubble.below { transform: translate(-50%, -8px) scale(.94); transform-origin: 50% 0; }
-.chart-bubble.below.show { transform: translate(-50%, 0) scale(1); }
-.chart-bubble.snap { transition: opacity .16s ease, transform .2s cubic-bezier(.2, .8, .3, 1); }
-.chart-bubble b { display: block; font: 400 1.15rem/1.2 var(--serif); font-variant-numeric: tabular-nums; }
-.bubble-label { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--ink); opacity: .78; }
-.bubble-label::before { content: ""; width: 6px; height: 6px; background: var(--muted); border-radius: 50%; }
-.chart-bubble[data-tone="win"] .bubble-label::before { background: var(--win); }
-.chart-bubble[data-tone="loss"] .bubble-label::before { background: var(--loss); }
+.chart-bubble { position: absolute; top: 0; left: 0; z-index: 5; display: grid; gap: 2px; min-width: 128px; padding: 8px 11px 9px; white-space: nowrap; line-height: 1.3; color: var(--card); background: var(--ink); border-radius: 8px; box-shadow: 0 4px 12px var(--shadow); opacity: 0; transform: translate(-50%, calc(-100% + 4px)); pointer-events: none; transition: left .12s ease-out, top .12s ease-out, opacity .12s ease-out, transform .16s cubic-bezier(.2, .7, .2, 1); }
+.chart-bubble::after { content: ""; position: absolute; bottom: -4px; left: calc(50% + var(--caret, 0px)); width: 8px; height: 8px; background: inherit; border-radius: 1px; transform: translateX(-50%) rotate(45deg); }
+.chart-bubble.show { opacity: 1; transform: translate(-50%, -100%); }
+.chart-bubble.below { transform: translate(-50%, -4px); }
+.chart-bubble.below.show { transform: translate(-50%, 0); }
+.chart-bubble.below::after { top: -4px; bottom: auto; }
+.chart-bubble.snap { transition: opacity .12s ease-out, transform .16s cubic-bezier(.2, .7, .2, 1); }
+.bubble-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.bubble-row b { font: 500 .95rem/1.2 var(--sans); font-variant-numeric: tabular-nums; }
+.bubble-tag { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; opacity: .85; }
+.bubble-dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; opacity: .5; }
+.chart-bubble[data-tone="win"] .bubble-dot { background: var(--win); opacity: 1; }
+.chart-bubble[data-tone="loss"] .bubble-dot { background: var(--loss); opacity: 1; }
+.bubble-label { font-size: .72rem; color: color-mix(in srgb, var(--card) 62%, transparent); }
 .chart-foot { margin-top: 6px; font-size: .76rem; color: var(--muted); }
 .backup { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 16px; }
 .backup-actions { display: flex; gap: 8px; }

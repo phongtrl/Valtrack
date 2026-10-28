@@ -102,6 +102,12 @@ function svgEl(tag, attrs = {}, parent) {
   return node;
 }
 
+// "20 Oct", with the year only when it is not this year.
+function shortDate(value) {
+  const d = typeof value === "number" ? new Date(value) : new Date(value + "T12:00:00");
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+}
+
 const movingAverage = (values, size) => values.map((_, i) => average(values.slice(Math.max(0, i - size + 1), i + 1)));
 
 // A smooth curve through the points that never overshoots them (monotone cubic interpolation).
@@ -153,32 +159,57 @@ function chartSvg(values, label, { ref, min, max, fmt, meta = [], onShow, onHide
   svgEl("path", { class: "chart-area", d: `${curve} L${n(x(last))},${H - B} L${n(x(0))},${H - B} Z` }, svg);
   svgEl("path", { class: "chart-trend", d: curve }, svg);
 
+  const guide = svgEl("line", { class: "chart-guide", x1: 0, x2: 0, y1: T, y2: H - B }, svg);
+  let active = null;
+  const activate = (i, dot) => {
+    if (active) active.classList.remove("active");
+    active = dot;
+    dot.classList.add("active");
+    guide.style.transform = `translateX(${n(x(i))}px)`;
+    guide.classList.add("on");
+  };
+  const deactivate = () => {
+    if (active) active.classList.remove("active");
+    active = null;
+    guide.classList.remove("on");
+  };
+
   values.forEach((v, i) => {
     const point = svgEl("g", { class: "chart-point" }, svg);
     const hit = svgEl("circle", { class: "chart-hit", cx: n(x(i)), cy: n(y(v)), r: 9 }, point);
-    svgEl("circle", { class: `chart-node ${(meta[i] && meta[i].tone) || ""}${i === last ? " last" : ""}`, cx: n(x(i)), cy: n(y(v)), r: i === last ? 4.5 : 3.2 }, point);
-    point.addEventListener("pointerenter", () => onShow(i, hit));
-    point.addEventListener("pointerleave", (e) => { if (e.pointerType !== "touch") onHide(); }); // a tap on a phone stays until you tap elsewhere
-    point.addEventListener("click", () => onShow(i, hit));
+    const dot = svgEl("circle", { class: `chart-node ${(meta[i] && meta[i].tone) || ""}${i === last ? " last" : ""}`, cx: n(x(i)), cy: n(y(v)), r: i === last ? 4.5 : 3.2 }, point);
+    const show = () => { activate(i, dot); onShow(i, hit); };
+    point.addEventListener("pointerenter", show);
+    point.addEventListener("pointerleave", (e) => { if (e.pointerType !== "touch") { deactivate(); onHide(); } }); // a tap on a phone stays until you tap elsewhere
+    point.addEventListener("click", show);
   });
   return svg;
 }
 
-// The bubble that follows the node you point at: it glides between nodes, flips below near the top and stays inside the card.
+// A small tooltip that follows the node you point at: it glides between nodes, flips below near the top and stays inside the card.
 function placeBubble(card, bubble, anchor, value, info) {
-  bubble.replaceChildren(el("b", "", value));
-  if (info) bubble.append(el("span", "bubble-label", info.label));
+  const row = el("div", "bubble-row");
+  row.append(el("b", "", value));
+  if (info && info.tag) {
+    const tag = el("span", "bubble-tag");
+    tag.append(el("i", "bubble-dot"), document.createTextNode(info.tag));
+    row.append(tag);
+  }
+  bubble.replaceChildren(row);
+  if (info && info.label) bubble.append(el("span", "bubble-label", info.label));
   bubble.dataset.tone = (info && info.tone) || "";
   const c = card.getBoundingClientRect();
   const a = anchor.getBoundingClientRect();
   const w = bubble.offsetWidth, h = bubble.offsetHeight;
-  const x = Math.min(Math.max(a.left + a.width / 2 - c.left, w / 2 + 6), c.width - w / 2 - 6);
+  const nodeX = a.left + a.width / 2 - c.left;
+  const x = Math.min(Math.max(nodeX, w / 2 + 6), c.width - w / 2 - 6);
   const above = a.top - c.top - h - 12 > 0;
   const wasShown = bubble.classList.contains("show");
   if (!wasShown) bubble.classList.add("snap"); // first appearance: fade in place instead of gliding in from the corner
   bubble.classList.toggle("below", !above);
   bubble.style.left = `${x}px`;
   bubble.style.top = `${above ? a.top - c.top - 6 : a.bottom - c.top + 6}px`;
+  bubble.style.setProperty("--caret", `${Math.max(-(w / 2 - 12), Math.min(w / 2 - 12, nodeX - x))}px`); // the pointer keeps aiming at the node near the edges
   if (!wasShown) { void bubble.offsetWidth; bubble.classList.remove("snap"); }
   bubble.classList.add("show");
 }
@@ -210,7 +241,7 @@ function chartCard(title, values, fmt, opts = {}) {
 
 function renderCharts(view) {
   const recent = view.slice(0, CHART_MATCHES).reverse(); // oldest first
-  const meta = recent.map((m) => ({ tone: m.result, label: `${m.date} · ${m.map}${m.agent ? " · " + m.agent : ""}` }));
+  const meta = recent.map((m) => ({ tone: m.result, tag: m.result[0].toUpperCase() + m.result.slice(1), label: `${shortDate(m.date)} · ${m.map}${m.agent ? " · " + m.agent : ""}` }));
   const rolling = recent.map((_, i) => {
     const window = recent.slice(Math.max(0, i - 9), i + 1);
     return (window.filter((m) => m.result === "win").length / window.length) * 100;
@@ -234,7 +265,7 @@ function renderRrChart() {
   }
   const last = data[data.length - 1];
   const net = last.score - data[0].score;
-  const meta = data.map((h) => ({ tone: h.change > 0 ? "win" : h.change < 0 ? "loss" : "", label: `${localDay(h.time)} · ${h.change > 0 ? "+" : ""}${h.change} RR` }));
+  const meta = data.map((h) => ({ tone: h.change > 0 ? "win" : h.change < 0 ? "loss" : "", tag: `${h.change > 0 ? "+" : h.change < 0 ? "−" : ""}${Math.abs(h.change)} RR`, label: shortDate(h.time) }));
   box.append(chartCard("Rank rating", data.map((h) => h.score), (v) => String(Math.round(v)), {
     head: `${last.tier} · ${last.rr} RR`,
     foot: `${net > 0 ? "+" : ""}${net} RR across your last ${data.length} ranked games`,
@@ -441,7 +472,11 @@ function renderGoal() {
 
 function bindInsights() {
   document.addEventListener("pointerdown", (e) => {
-    if (!e.target.closest(".chart-point")) document.querySelectorAll(".chart-bubble.show").forEach((b) => b.classList.remove("show"));
+    if (!e.target.closest(".chart-point")) {
+      document.querySelectorAll(".chart-bubble.show").forEach((b) => b.classList.remove("show"));
+      document.querySelectorAll(".chart-guide.on").forEach((g) => g.classList.remove("on"));
+      document.querySelectorAll(".chart-node.active").forEach((d) => d.classList.remove("active"));
+    }
   });
   const select = $("goal-select");
   for (let i = 0; i <= 24; i++) select.append(new Option(rankNameAt(i), rankNameAt(i)));
