@@ -293,6 +293,45 @@ function extractDetails(m, played, teamId) {
   return { myTeam: String(teamId ?? ""), teams, players, duels };
 }
 
+// Weapons for the tracked player in one match. Per weapon: [rounds bought, damage, headshots, shots, kills, times killed by it].
+// Also how many rounds had 2, 3, 4 and 5 kills. Kills come from the kill feed; rounds, damage and headshots from each round's loadout.
+function extractWeapons(m, me) {
+  const mine = String(me?.puuid || "");
+  if (!mine) return null;
+  const puuidOf = (p) => String(p?.puuid || p?.player_puuid || "");
+  const label = (w) => (w && w.type === "Ability" ? "Abilities" : String(w?.name || "").trim() || "Other");
+  const table = {};
+  const row = (name) => (table[name] = table[name] || [0, 0, 0, 0, 0, 0]);
+
+  const perRound = new Map();
+  (Array.isArray(m?.kills) ? m.kills : []).forEach((k) => {
+    const killer = puuidOf(k?.killer), victim = puuidOf(k?.victim);
+    if (killer === mine && victim !== mine) {
+      row(label(k.weapon))[4]++;
+      perRound.set(k.round, (perRound.get(k.round) || 0) + 1);
+    } else if (victim === mine && killer !== mine) {
+      row(label(k.weapon))[5]++;
+    }
+  });
+  (Array.isArray(m?.rounds) ? m.rounds : []).forEach((round) => {
+    const entries = round?.stats ?? round?.player_stats ?? [];
+    const s = entries.find((e) => puuidOf(e?.player) === mine || String(e?.player_puuid || "") === mine);
+    const weapon = String(s?.economy?.weapon?.name || "").trim();
+    if (!s || !weapon) return;
+    const r = row(weapon);
+    r[0]++;
+    (s.damage_events || []).forEach((d) => {
+      const head = Number(d?.headshots) || 0;
+      r[1] += Number(d?.damage) || 0;
+      r[2] += head;
+      r[3] += head + (Number(d?.bodyshots) || 0) + (Number(d?.legshots) || 0);
+    });
+  });
+  if (!Object.keys(table).length) return null;
+  const counts = [...perRound.values()];
+  return { w: table, m: [2, 3, 4, 5].map((n) => counts.filter((c) => (n === 5 ? c >= 5 : c === n)).length) };
+}
+
 function parseMatch(m) {
   const meta = m?.metadata || m?.meta || {};
   const players = Array.isArray(m?.players) ? m.players : [];
@@ -344,6 +383,7 @@ function parseMatch(m) {
   const map = meta?.map?.name ?? meta?.map_name ?? "Unknown";
   const queue = meta?.queue?.name ?? meta?.queue?.id ?? meta?.mode ?? "Unknown";
   const details = extractDetails(m, played, teamId);
+  const weapons = extractWeapons(m, me);
   return {
     id: String(meta.match_id ?? meta.id),
     date: Number.isFinite(startedMs) ? new Date(startedMs).toISOString().slice(0, 10) : (String(started || "").slice(0, 10) || today()),
@@ -354,7 +394,8 @@ function parseMatch(m) {
     kills, deaths, assists,
     acs: played > 0 ? Math.round(score / played) : Math.round(score),
     result,
-    ...(details ? { details } : {})
+    ...(details ? { details } : {}),
+    ...(weapons ? { weapons } : {})
   };
 }
 

@@ -173,6 +173,11 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <div id="teammates"></div>
         <p class="hint">Win rate with players you have queued with at least twice, in the selected game mode.</p>
       </section>
+      <section class="card pad">
+        <h2>Weapons</h2>
+        <div id="weapons"></div>
+        <p class="hint">Rounds are how often you bought the weapon. Kills and deaths come from the kill feed. Damage and headshots count rounds where you bought that weapon, so guns you picked up are only partly included.</p>
+      </section>
     </div>
 
     <!-- Progress: trends over time and your rank goal -->
@@ -240,7 +245,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <ul>
         <li><b>Overview:</b> win rate, record, K/D, ACS, current and peak rank, today's session and your recent form.</li>
         <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
-        <li><b>Stats:</b> win rate and K/D per agent and map, and the players you team up with.</li>
+        <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, and your weapons: which you use most, which gets you the most kills per round, and which kills you most.</li>
         <li><b>Progress:</b> trend charts (hover or tap a dot for details), rank history and a rank goal estimate.</li>
         <li><b>Compare:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
         <li>The <b>Game mode</b> selector at the top applies to every tab. It starts on Competitive.</li>
@@ -255,6 +260,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <details><summary>What do ACS, ADR, HS%, FB and FD mean?</summary><p>ACS is your average combat score per round, ADR your average damage per round, and HS% the share of your shots that hit the head. FB and FD are first bloods and first deaths: who got the first kill, or died first, in a round.</p></details>
         <details><summary>How are the rank goal and catch-up estimates calculated?</summary><p>Valtrack replays the climb 1,500 times. Each game is a win with the win rate shown, worth one of the wins you actually got in your recent ranked games, or a loss worth one of your usual losses. With no history it assumes about 14 to 26 RR per game. You see the median number of games and how many games cover 80% of the runs. It is still an estimate: hidden rating, win streaks and demotion protection are not modelled, and Immortal and Radiant are approximated.</p></details>
         <details><summary>What happens when I open another player's profile?</summary><p>Valtrack loads their matches and rank the same way as yours, and saves them in this browser. Use the "Back to" link above the name, or the Account menu, to return. While you look at them, Compare and Rank goal treat them as the main player.</p></details>
+        <details><summary>How are the weapon statistics calculated?</summary><p>Kills and deaths per weapon come from the kill feed of each match. Rounds, damage per round (ADR) and headshot percentage are counted in the rounds where you bought that weapon, so a gun you picked up mid-round is only partly included. Kills per round is the quick measure of impact. Weapon data is saved for matches fetched with this version, so press refresh to load your latest ones.</p></details>
         <details><summary>Why are older matches missing player details?</summary><p>Player details are only saved for matches fetched with the latest version, and the data source only returns recent matches. Press refresh to fill in your latest ones.</p></details>
         <details><summary>How are draws counted?</summary><p>A tied score is shown as a draw. It counts as neither a win nor a loss.</p></details>
         <details><summary>Can I install Valtrack as an app?</summary><p>Yes, when you open it from a web address or localhost. Use your browser's Install or Add to Home Screen option. It then opens like an app and shows your saved data offline.</p></details>

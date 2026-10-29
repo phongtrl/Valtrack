@@ -273,6 +273,82 @@ function renderRrChart() {
   }));
 }
 
+/* ---------- Weapons ---------- */
+
+// Adds up the saved weapon data of the matches in view.
+function weaponStats(list) {
+  const total = new Map();
+  const multi = [0, 0, 0, 0];
+  let matches = 0;
+  list.forEach((m) => {
+    if (!m.weapons) return;
+    matches++;
+    Object.entries(m.weapons.w).forEach(([name, v]) => {
+      const t = total.get(name) || [0, 0, 0, 0, 0, 0];
+      v.forEach((x, i) => { t[i] += x; });
+      total.set(name, t);
+    });
+    (m.weapons.m || []).forEach((x, i) => { multi[i] += x; });
+  });
+  const rows = [...total].map(([name, t]) => ({ name, rounds: t[0], damage: t[1], head: t[2], shots: t[3], kills: t[4], deaths: t[5] }));
+  return { rows, multi, matches };
+}
+
+function renderWeapons(view) {
+  const box = $("weapons");
+  box.replaceChildren();
+  const { rows, multi, matches } = weaponStats(view);
+  if (!rows.length) {
+    box.append(el("p", "empty", "Weapon data loads with Fetch latest and covers your most recent matches in this game mode."));
+    return;
+  }
+  const totalRounds = rows.reduce((t, r) => t + r.rounds, 0) || 1;
+  const perRound = (r) => (r.rounds ? r.kills / r.rounds : 0);
+  const top = (list, score) => list.reduce((a, b) => (score(b) > score(a) ? b : a));
+  const chips = el("div", "md-chips wp-chips");
+  const chip = (text) => chips.append(el("span", "md-chip", text));
+  const used = top(rows, (r) => r.rounds);
+  if (used.rounds) chip(`Most used: ${used.name} (${pct(used.rounds / totalRounds)} of rounds)`);
+  const killer = top(rows, (r) => r.kills);
+  if (killer.kills) chip(`Most kills: ${killer.name} (${killer.kills})`);
+  const impact = rows.filter((r) => r.rounds >= 15);
+  if (impact.length > 1) { const best = top(impact, perRound); chip(`Most impact: ${best.name} (${perRound(best).toFixed(2)} kills per round)`); }
+  const deadly = top(rows, (r) => r.deaths);
+  if (deadly.deaths) chip(`Deadliest against you: ${deadly.name} (${deadly.deaths} deaths)`);
+  box.append(chips);
+
+  const head = el("div", "wp-head");
+  ["Weapon", "Rounds", "Kills", "K / round", "ADR", "HS%", "Killed you"].forEach((l) => {
+    const cell = el("span", "", l);
+    if (l === "K / round") cell.title = "Kills per round";
+    head.append(cell);
+  });
+  box.append(head);
+  rows.sort((a, b) => b.rounds - a.rounds || b.kills - a.kills).slice(0, 10).forEach((r) => {
+    const name = el("div", "wp-name");
+    const bar = el("div", "bar");
+    const fill = el("div", "fill");
+    fill.style.width = pct(r.rounds / totalRounds);
+    bar.append(fill);
+    name.append(el("strong", "", r.name), bar);
+    const row = el("div", "wp-row");
+    row.append(name);
+    [
+      ["Rounds", r.rounds || "—"], ["Kills", r.kills],
+      ["Kills / round", r.rounds ? perRound(r).toFixed(2) : "—"],
+      ["ADR", r.rounds ? Math.round(r.damage / r.rounds) : "—"],
+      ["HS%", r.shots ? Math.round((r.head / r.shots) * 100) + "%" : "—"],
+      ["Killed you", r.deaths],
+    ].forEach(([label, value]) => {
+      const cell = el("span", "", String(value));
+      cell.dataset.label = label;
+      row.append(cell);
+    });
+    box.append(row);
+  });
+  box.append(el("p", "hint", `Multi-kill rounds across ${matches} ${matches === 1 ? "match" : "matches"}: 2K ${multi[0]} · 3K ${multi[1]} · 4K ${multi[2]} · Ace ${multi[3]}`));
+}
+
 /* ---------- Teammates ---------- */
 
 function renderTeammates(view) {
@@ -492,5 +568,6 @@ function renderInsights(view) {
   renderCharts(view);
   renderRrChart();
   renderTeammates(view);
+  renderWeapons(view);
   renderGoal();
 }
