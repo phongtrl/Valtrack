@@ -332,6 +332,109 @@ function extractWeapons(m, me) {
   return { w: table, m: [2, 3, 4, 5].map((n) => counts.filter((c) => (n === 5 ? c >= 5 : c === n)).length) };
 }
 
+// The tracked player's rounds: which side they were on, how the team bought, and the opening duels and trades.
+// sides: per side [rounds, rounds won, kills, deaths]. econ: per buy type [rounds, rounds won] plus [total loadout, rounds].
+// open: [first bloods, won after, first deaths, won after, deaths, avenged within 5 s, teammate deaths, avenged by you].
+function extractRounds(m, me, teamId) {
+  const mine = String(me?.puuid || "");
+  const rounds = Array.isArray(m?.rounds) ? m.rounds : [];
+  if (!mine || !rounds.length) return null;
+  const myTeam = String(teamId ?? "");
+  const players = Array.isArray(m?.players) ? m.players : [];
+  const puuidOf = (p) => String(p?.puuid || "");
+  const teamOf = new Map(players.map((p) => [puuidOf(p), String(p?.team_id ?? "")]));
+  const teamIds = [...new Set(teamOf.values())].filter(Boolean);
+  const other = (t) => teamIds.find((x) => x !== t);
+  const rid = (r, i) => (Number.isFinite(r?.id) ? r.id : i);
+  const won = (r) => String(r?.winning_team ?? "") === myTeam;
+  const kills = Array.isArray(m?.kills) ? m.kills : [];
+
+  // Attackers plant the spike and defenders defuse it, which shows the sides in those rounds. The sides swap after round 12.
+  const evidence = new Map();
+  const votes = new Map();
+  rounds.forEach((r, i) => {
+    const id = rid(r, i);
+    const planter = String(r?.plant?.player?.team ?? "");
+    const defuser = String(r?.defuse?.player?.team ?? "");
+    const attackers = planter || (defuser ? other(defuser) : "");
+    if (!attackers) return;
+    evidence.set(id, attackers);
+    const firstHalf = id < 12 ? attackers : id < 24 ? other(attackers) : null;
+    if (firstHalf) votes.set(firstHalf, (votes.get(firstHalf) || 0) + 1);
+  });
+  let first = null;
+  votes.forEach((n, team) => { if (!first || n > votes.get(first)) first = team; });
+  const sideOf = (id) => {
+    const attackers = id >= 24 ? evidence.get(id) : first ? (id < 12 ? first : other(first)) : null;
+    return attackers ? (attackers === myTeam ? "A" : "D") : null;
+  };
+
+  const sides = { A: [0, 0, 0, 0], D: [0, 0, 0, 0] };
+  let sideKnown = false;
+  rounds.forEach((r, i) => {
+    const side = sideOf(rid(r, i));
+    if (!side) return;
+    sideKnown = true;
+    sides[side][0]++;
+    if (won(r)) sides[side][1]++;
+  });
+  kills.forEach((k) => {
+    const side = sideOf(k?.round);
+    if (!side) return;
+    if (puuidOf(k.killer) === mine && puuidOf(k.victim) !== mine) sides[side][2]++;
+    if (puuidOf(k.victim) === mine && puuidOf(k.killer) !== mine) sides[side][3]++;
+  });
+
+  // Buy type from the team's average loadout value per player at the start of the round.
+  const econ = { pistol: [0, 0], eco: [0, 0], force: [0, 0], full: [0, 0], v: [0, 0] };
+  rounds.forEach((r, i) => {
+    const id = rid(r, i);
+    const values = (r?.stats ?? r?.player_stats ?? [])
+      .filter((s) => String(s?.player?.team ?? teamOf.get(puuidOf(s?.player)) ?? "") === myTeam)
+      .map((s) => Number(s?.economy?.loadout_value))
+      .filter(Number.isFinite);
+    if (!values.length) return;
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const kind = id === 0 || id === 12 ? "pistol" : avg < 1800 ? "eco" : avg < 3300 ? "force" : "full";
+    econ[kind][0]++;
+    if (won(r)) econ[kind][1]++;
+    econ.v[0] += avg;
+    econ.v[1]++;
+  });
+
+  const open = [0, 0, 0, 0, 0, 0, 0, 0];
+  const byRound = new Map();
+  kills.forEach((k) => { if (!byRound.has(k?.round)) byRound.set(k?.round, []); byRound.get(k?.round).push(k); });
+  const roundById = new Map(rounds.map((r, i) => [rid(r, i), r]));
+  const time = (k) => Number(k?.time_in_round_in_ms);
+  byRound.forEach((list, id) => {
+    list.sort((a, b) => time(a) - time(b));
+    const round = roundById.get(id);
+    const opener = list[0];
+    if (opener && Number.isFinite(time(opener))) {
+      if (puuidOf(opener.killer) === mine) { open[0]++; if (round && won(round)) open[1]++; }
+      else if (puuidOf(opener.victim) === mine) { open[2]++; if (round && won(round)) open[3]++; }
+    }
+    list.forEach((k) => {
+      const killer = puuidOf(k.killer), victim = puuidOf(k.victim);
+      const revenge = list.find((x) => puuidOf(x.victim) === killer && time(x) >= time(k) && time(x) - time(k) <= 5000);
+      if (victim === mine && killer !== mine) {
+        open[4]++;
+        if (revenge && teamOf.get(puuidOf(revenge.killer)) === myTeam) open[5]++;
+      } else if (victim !== mine && teamOf.get(victim) === myTeam && teamOf.get(killer) !== myTeam) {
+        open[6]++;
+        if (revenge && puuidOf(revenge.killer) === mine) open[7]++;
+      }
+    });
+  });
+
+  const out = {};
+  if (sideKnown) out.sides = sides;
+  if (econ.v[1]) out.econ = econ;
+  if (byRound.size) out.open = open;
+  return Object.keys(out).length ? out : null;
+}
+
 function parseMatch(m) {
   const meta = m?.metadata || m?.meta || {};
   const players = Array.isArray(m?.players) ? m.players : [];
@@ -384,6 +487,7 @@ function parseMatch(m) {
   const queue = meta?.queue?.name ?? meta?.queue?.id ?? meta?.mode ?? "Unknown";
   const details = extractDetails(m, played, teamId);
   const weapons = extractWeapons(m, me);
+  const play = extractRounds(m, me, teamId);
   return {
     id: String(meta.match_id ?? meta.id),
     date: Number.isFinite(startedMs) ? new Date(startedMs).toISOString().slice(0, 10) : (String(started || "").slice(0, 10) || today()),
@@ -395,7 +499,8 @@ function parseMatch(m) {
     acs: played > 0 ? Math.round(score / played) : Math.round(score),
     result,
     ...(details ? { details } : {}),
-    ...(weapons ? { weapons } : {})
+    ...(weapons ? { weapons } : {}),
+    ...(play || {})
   };
 }
 
@@ -690,6 +795,7 @@ function bindEvents() {
   bindTabs();
   bindMatchDetail();
   bindHelp();
+  bindChangelog();
   bindInsights();
   $("back-link").addEventListener("click", () => {
     const home = previousAccount;
@@ -1304,6 +1410,26 @@ function renderMatchDetail() {
     duelsEl(d)
   );
   dialog.scrollTop = scroll;
+}
+
+function bindChangelog() {
+  const dialog = $("changelog");
+  const body = $("changelog-body");
+  RELEASES.forEach((r, i) => {
+    const entry = el("article", "release" + (i === 0 ? " current" : ""));
+    const title = el("h3");
+    title.append(el("span", "ver", "v" + r.version), document.createTextNode(r.title));
+    const list = el("ul");
+    r.items.forEach((text) => list.append(el("li", "", text)));
+    entry.append(title, list);
+    body.append(entry);
+  });
+  document.querySelectorAll("[data-open-changelog]").forEach((b) => {
+    b.textContent = `Version history (v${RELEASES[0].version})`;
+    b.addEventListener("click", () => { dialog.showModal(); dialog.scrollTop = 0; });
+  });
+  $("changelog-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
 }
 
 function bindHelp() {

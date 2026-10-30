@@ -299,13 +299,14 @@ dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height
 .team { margin-top: 24px; }
 .team-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; font: 1.1rem var(--serif); }
 .team-head .res { font: 500 .85rem var(--sans); }
-.pl-head, .pl-row, .wp-head, .wp-row { display: grid; grid-template-columns: minmax(0, 2.4fr) 92px 56px 56px 56px 56px 66px; gap: 8px; align-items: center; }
-.pl-head, .wp-head { padding: 6px 12px; font-size: .74rem; color: var(--muted); }
-.wp-row { padding: 10px 12px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-.wp-name { min-width: 0; }
-.wp-name strong { display: block; font-weight: 500; }
-.wp-name .bar { margin-top: 6px; }
-.wp-chips { margin-bottom: 16px; }
+.pl-head, .pl-row { display: grid; grid-template-columns: minmax(0, 2.4fr) 92px 56px 56px 56px 56px 66px; gap: 8px; align-items: center; }
+.pl-head, .tbl-head { padding: 6px 12px; font-size: .74rem; color: var(--muted); }
+.tbl-head, .tbl-row { display: grid; grid-template-columns: var(--cols); gap: 8px; align-items: center; }
+.tbl-row { padding: 10px 12px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.tbl-name { min-width: 0; }
+.tbl-name strong { display: block; font-weight: 500; }
+.tbl-name .bar { margin-top: 6px; }
+.tbl-chips { margin-bottom: 16px; }
 .pl-row { width: 100%; padding: 10px 12px; font-weight: 400; text-align: left; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 8px; font-variant-numeric: tabular-nums; }
 .pl-row:hover { color: var(--ink); background: var(--hover); border-color: var(--line); }
 .pl-row[aria-pressed="true"] { background: var(--tint-bg); border-color: var(--tint-line); }
@@ -326,6 +327,14 @@ dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height
 .duel-row .bar { background: rgba(169,80,63,.5); }
 .duel-row .bar.idle { background: var(--line); }
 .duel-score { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---------- Version history ---------- */
+.release { padding: 14px 0; border-top: 1px solid var(--line); }
+.release:first-child { border-top: 0; padding-top: 0; }
+.release h3 { display: flex; align-items: baseline; gap: 10px; font-size: 1.05rem; }
+.release .ver { padding: 1px 8px; font: 500 .78rem var(--sans); border: 1px solid var(--line-strong); border-radius: 999px; }
+.release.current .ver { color: var(--card); background: var(--ink); border-color: var(--ink); }
+.release ul { display: grid; gap: 4px; margin: 8px 0 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
 
 /* ---------- Help and FAQ ---------- */
 .help h3 { margin: 24px 0 8px; font-size: 1.05rem; }
@@ -418,10 +427,10 @@ dialog p { margin-bottom: 18px; }
   td.row-action::before { content: none; }
   dialog.sheet { width: 100%; height: 100%; max-height: none; margin: 0; border: 0; border-radius: 0; }
   .sheet-inner { padding: 16px 16px 28px; }
-  .pl-head, .wp-head { display: none; }
-  .pl-row, .wp-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; }
-  .pl-name, .wp-name { grid-column: 1 / -1; }
-  .pl-row > span[data-label]::before, .wp-row > span[data-label]::before { content: attr(data-label); display: block; font-size: .68rem; color: var(--muted); }
+  .pl-head, .tbl-head { display: none; }
+  .pl-row, .tbl-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; }
+  .pl-name, .tbl-name { grid-column: 1 / -1; }
+  .pl-row > span[data-label]::before, .tbl-row > span[data-label]::before { content: attr(data-label); display: block; font-size: .68rem; color: var(--muted); }
   .duel-row { grid-template-columns: 1fr auto; gap: 6px 12px; }
   .duel-row .bar { grid-column: 1 / -1; order: 3; }
 }

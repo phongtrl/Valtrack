@@ -294,59 +294,155 @@ function weaponStats(list) {
   return { rows, multi, matches };
 }
 
+// A small table. headers: column titles. rows: { name, bar (0 to 1, optional), cells: [[label shown on phones, value], ...] }.
+const colsFor = (n) => `minmax(0, 2.2fr) repeat(${n}, minmax(64px, 1fr))`;
+const emptyNote = (what) => el("p", "empty", `${what} loads with Fetch latest and covers your most recent matches in this game mode.`);
+
+function statTable(headers, rows, cols) {
+  const table = el("div", "tbl");
+  table.style.setProperty("--cols", cols);
+  const head = el("div", "tbl-head");
+  headers.forEach((h) => head.append(el("span", "", h)));
+  table.append(head);
+  rows.forEach((r) => {
+    const name = el("div", "tbl-name");
+    name.append(el("strong", "", r.name));
+    if (r.bar !== undefined) {
+      const bar = el("div", "bar");
+      const fill = el("div", "fill");
+      fill.style.width = pct(r.bar);
+      bar.append(fill);
+      name.append(bar);
+    }
+    const row = el("div", "tbl-row");
+    row.append(name);
+    r.cells.forEach(([label, value]) => {
+      const cell = el("span", "", String(value));
+      cell.dataset.label = label;
+      row.append(cell);
+    });
+    table.append(row);
+  });
+  return table;
+}
+
+function chipRow(texts) {
+  const chips = el("div", "md-chips tbl-chips");
+  texts.filter(Boolean).forEach((t) => chips.append(el("span", "md-chip", t)));
+  return chips;
+}
+
 function renderWeapons(view) {
   const box = $("weapons");
   box.replaceChildren();
   const { rows, multi, matches } = weaponStats(view);
   if (!rows.length) {
-    box.append(el("p", "empty", "Weapon data loads with Fetch latest and covers your most recent matches in this game mode."));
+    box.append(emptyNote("Weapon data"));
     return;
   }
   const totalRounds = rows.reduce((t, r) => t + r.rounds, 0) || 1;
   const perRound = (r) => (r.rounds ? r.kills / r.rounds : 0);
   const top = (list, score) => list.reduce((a, b) => (score(b) > score(a) ? b : a));
-  const chips = el("div", "md-chips wp-chips");
-  const chip = (text) => chips.append(el("span", "md-chip", text));
   const used = top(rows, (r) => r.rounds);
-  if (used.rounds) chip(`Most used: ${used.name} (${pct(used.rounds / totalRounds)} of rounds)`);
   const killer = top(rows, (r) => r.kills);
-  if (killer.kills) chip(`Most kills: ${killer.name} (${killer.kills})`);
-  const impact = rows.filter((r) => r.rounds >= 15);
-  if (impact.length > 1) { const best = top(impact, perRound); chip(`Most impact: ${best.name} (${perRound(best).toFixed(2)} kills per round)`); }
   const deadly = top(rows, (r) => r.deaths);
-  if (deadly.deaths) chip(`Deadliest against you: ${deadly.name} (${deadly.deaths} deaths)`);
-  box.append(chips);
-
-  const head = el("div", "wp-head");
-  ["Weapon", "Rounds", "Kills", "K / round", "ADR", "HS%", "Killed you"].forEach((l) => {
-    const cell = el("span", "", l);
-    if (l === "K / round") cell.title = "Kills per round";
-    head.append(cell);
-  });
-  box.append(head);
-  rows.sort((a, b) => b.rounds - a.rounds || b.kills - a.kills).slice(0, 10).forEach((r) => {
-    const name = el("div", "wp-name");
-    const bar = el("div", "bar");
-    const fill = el("div", "fill");
-    fill.style.width = pct(r.rounds / totalRounds);
-    bar.append(fill);
-    name.append(el("strong", "", r.name), bar);
-    const row = el("div", "wp-row");
-    row.append(name);
-    [
+  const impact = rows.filter((r) => r.rounds >= 15);
+  const best = impact.length > 1 ? top(impact, perRound) : null;
+  box.append(chipRow([
+    used.rounds && `Most used: ${used.name} (${pct(used.rounds / totalRounds)} of rounds)`,
+    killer.kills && `Most kills: ${killer.name} (${killer.kills})`,
+    best && `Most impact: ${best.name} (${perRound(best).toFixed(2)} kills per round)`,
+    deadly.deaths && `Deadliest against you: ${deadly.name} (${deadly.deaths} deaths)`,
+  ]));
+  const shown = rows.sort((a, b) => b.rounds - a.rounds || b.kills - a.kills).slice(0, 10);
+  box.append(statTable(["Weapon", "Rounds", "Kills", "K / round", "ADR", "HS%", "Killed you"], shown.map((r) => ({
+    name: r.name,
+    bar: r.rounds / totalRounds,
+    cells: [
       ["Rounds", r.rounds || "—"], ["Kills", r.kills],
-      ["Kills / round", r.rounds ? perRound(r).toFixed(2) : "—"],
+      ["K / round", r.rounds ? perRound(r).toFixed(2) : "—"],
       ["ADR", r.rounds ? Math.round(r.damage / r.rounds) : "—"],
       ["HS%", r.shots ? Math.round((r.head / r.shots) * 100) + "%" : "—"],
       ["Killed you", r.deaths],
-    ].forEach(([label, value]) => {
-      const cell = el("span", "", String(value));
-      cell.dataset.label = label;
-      row.append(cell);
-    });
-    box.append(row);
-  });
+    ],
+  })), colsFor(6)));
   box.append(el("p", "hint", `Multi-kill rounds across ${matches} ${matches === 1 ? "match" : "matches"}: 2K ${multi[0]} · 3K ${multi[1]} · 4K ${multi[2]} · Ace ${multi[3]}`));
+}
+
+/* ---------- Sides, economy and opening duels ---------- */
+
+const newSides = () => ({ A: [0, 0, 0, 0], D: [0, 0, 0, 0] });
+const rate = (a) => (a[0] ? pct(a[1] / a[0]) : "—");
+
+function renderSides(view) {
+  const box = $("sides");
+  box.replaceChildren();
+  const all = newSides();
+  const maps = new Map();
+  let matches = 0;
+  view.forEach((m) => {
+    if (!m.sides) return;
+    matches++;
+    const t = maps.get(m.map) || newSides();
+    ["A", "D"].forEach((s) => m.sides[s].forEach((v, i) => { all[s][i] += v; t[s][i] += v; }));
+    maps.set(m.map, t);
+  });
+  if (!matches) { box.append(emptyNote("Side data")); return; }
+  const kd = (a) => (a[3] ? (a[2] / a[3]).toFixed(2) : a[2] ? String(a[2]) : "—");
+  const line = (name, t) => `${name}: ${rate([t[0], t[1]])} of rounds won, K/D ${kd(t)}`;
+  box.append(chipRow([line("Attack", all.A), line("Defence", all.D)]));
+  const rows = [["All maps", all], ...[...maps].sort((a, b) => b[1].A[0] + b[1].D[0] - (a[1].A[0] + a[1].D[0]))];
+  box.append(statTable(["Map", "Attack won", "Defence won", "Attack K/D", "Defence K/D"], rows.map(([name, t]) => ({
+    name,
+    cells: [["Attack rounds won", rate(t.A)], ["Defence rounds won", rate(t.D)], ["Attack K/D", kd(t.A)], ["Defence K/D", kd(t.D)]],
+  })), colsFor(4)));
+}
+
+function renderEconomy(view) {
+  const box = $("economy");
+  box.replaceChildren();
+  const kinds = [["pistol", "Pistol rounds"], ["eco", "Eco"], ["force", "Force-buy"], ["full", "Full buy"]];
+  const total = { pistol: [0, 0], eco: [0, 0], force: [0, 0], full: [0, 0], v: [0, 0] };
+  let matches = 0;
+  view.forEach((m) => {
+    if (!m.econ) return;
+    matches++;
+    Object.keys(total).forEach((k) => m.econ[k].forEach((x, i) => { total[k][i] += x; }));
+  });
+  if (!matches) { box.append(emptyNote("Economy data")); return; }
+  const rounds = kinds.reduce((t, [k]) => t + total[k][0], 0) || 1;
+  box.append(chipRow([
+    total.v[1] && `Average team loadout: ${Math.round(total.v[0] / total.v[1]).toLocaleString("en")} credits per player and round`,
+    total.pistol[0] && `Pistol rounds won: ${rate(total.pistol)}`,
+    total.full[0] && `Full-buy rounds won: ${rate(total.full)}`,
+  ]));
+  box.append(statTable(["Buy type", "Rounds", "Rounds won", "Share"], kinds.map(([k, name]) => ({
+    name,
+    cells: [["Rounds", total[k][0]], ["Rounds won", rate(total[k])], ["Share of rounds", pct(total[k][0] / rounds)]],
+  })), colsFor(3)));
+}
+
+function renderOpening(view) {
+  const box = $("opening");
+  box.replaceChildren();
+  const o = [0, 0, 0, 0, 0, 0, 0, 0];
+  let matches = 0;
+  view.forEach((m) => {
+    if (!m.open) return;
+    matches++;
+    m.open.forEach((x, i) => { o[i] += x; });
+  });
+  if (!matches) { box.append(emptyNote("Opening duel data")); return; }
+  const duels = o[0] + o[2];
+  box.append(chipRow([
+    duels && `Opening duels won: ${pct(o[0] / duels)} (${o[0]} first bloods, ${o[2]} first deaths)`,
+    o[4] && `Your deaths avenged within 5 seconds: ${pct(o[5] / o[4])}`,
+    o[6] && `Teammate deaths you avenged: ${pct(o[7] / o[6])}`,
+  ]));
+  box.append(statTable(["", "Times", "Rounds won"], [
+    { name: "You got the first kill", cells: [["Times", o[0]], ["Rounds won", rate([o[0], o[1]])]] },
+    { name: "You died first", cells: [["Times", o[2]], ["Rounds won", rate([o[2], o[3]])]] },
+  ], colsFor(2)));
 }
 
 /* ---------- Teammates ---------- */
@@ -569,5 +665,8 @@ function renderInsights(view) {
   renderRrChart();
   renderTeammates(view);
   renderWeapons(view);
+  renderSides(view);
+  renderEconomy(view);
+  renderOpening(view);
   renderGoal();
 }

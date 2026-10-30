@@ -178,6 +178,21 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <div id="weapons"></div>
         <p class="hint">Rounds are how often you bought the weapon. Kills and deaths come from the kill feed. Damage and headshots count rounds where you bought that weapon, so guns you picked up are only partly included.</p>
       </section>
+      <section class="card pad">
+        <h2>Attack and defence</h2>
+        <div id="sides"></div>
+        <p class="hint">Sides are worked out from who planted or defused the spike, so a few matches may be missing. The sides swap after round 12.</p>
+      </section>
+      <section class="card pad">
+        <h2>Economy</h2>
+        <div id="economy"></div>
+        <p class="hint">The buy type is your team's average loadout value per player at the start of a round: eco under 1,800 credits, force-buy up to 3,299, full buy from 3,300. Rounds 1 and 13 are pistol rounds.</p>
+      </section>
+      <section class="card pad">
+        <h2>Opening duels and trades</h2>
+        <div id="opening"></div>
+        <p class="hint">The opening duel is the first kill of a round. A death counts as avenged when a teammate kills your killer within 5 seconds, and the same goes for the teammates you avenge.</p>
+      </section>
     </div>
 
     <!-- Progress: trends over time and your rank goal -->
@@ -222,10 +237,20 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 
   <footer class="foot">
     <p class="made">Made by lev0nt#101 for his friends.</p>
-    <p><button class="link" type="button" data-open-help>How to use &amp; FAQ</button> · <button id="storage-link" class="link" type="button">Where is my data saved?</button></p>
+    <p><button class="link" type="button" data-open-help>How to use &amp; FAQ</button> · <button class="link" type="button" data-open-changelog></button> · <button id="storage-link" class="link" type="button">Where is my data saved?</button></p>
     <p>Match data from the unofficial HenrikDev API. Not affiliated with Riot Games.</p>
   </footer>
 </main>
+
+<dialog id="changelog" class="sheet" aria-labelledby="changelog-title">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <div><h2 id="changelog-title">Version history</h2><p class="muted">Everything added to Valtrack so far, newest first.</p></div>
+      <button id="changelog-close" class="quiet" type="button">Close</button>
+    </div>
+    <div id="changelog-body"></div>
+  </div>
+</dialog>
 
 <dialog id="help" class="sheet" aria-labelledby="help-title">
   <div class="sheet-inner">
@@ -245,7 +270,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <ul>
         <li><b>Overview:</b> win rate, record, K/D, ACS, current and peak rank, today's session and your recent form.</li>
         <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
-        <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, and your weapons: which you use most, which gets you the most kills per round, and which kills you most.</li>
+        <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, and opening duels and trades.</li>
         <li><b>Progress:</b> trend charts (hover or tap a dot for details), rank history and a rank goal estimate.</li>
         <li><b>Compare:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
         <li>The <b>Game mode</b> selector at the top applies to every tab. It starts on Competitive.</li>
@@ -261,6 +286,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <details><summary>How are the rank goal and catch-up estimates calculated?</summary><p>Valtrack replays the climb 1,500 times. Each game is a win with the win rate shown, worth one of the wins you actually got in your recent ranked games, or a loss worth one of your usual losses. With no history it assumes about 14 to 26 RR per game. You see the median number of games and how many games cover 80% of the runs. It is still an estimate: hidden rating, win streaks and demotion protection are not modelled, and Immortal and Radiant are approximated.</p></details>
         <details><summary>What happens when I open another player's profile?</summary><p>Valtrack loads their matches and rank the same way as yours, and saves them in this browser. Use the "Back to" link above the name, or the Account menu, to return. While you look at them, Compare and Rank goal treat them as the main player.</p></details>
         <details><summary>How are the weapon statistics calculated?</summary><p>Kills and deaths per weapon come from the kill feed of each match. Rounds, damage per round (ADR) and headshot percentage are counted in the rounds where you bought that weapon, so a gun you picked up mid-round is only partly included. Kills per round is the quick measure of impact. Weapon data is saved for matches fetched with this version, so press refresh to load your latest ones.</p></details>
+        <details><summary>How are sides, economy and opening duels worked out?</summary><p>Sides come from who planted or defused the spike in each round, since the sides swap after round 12. Buy types come from your team's average loadout value at the start of the round. Opening duels use the first kill of each round, and a trade is a kill on your killer within 5 seconds. Matches where the data is missing are left out. Press refresh to load these for your latest matches.</p></details>
         <details><summary>Why are older matches missing player details?</summary><p>Player details are only saved for matches fetched with the latest version, and the data source only returns recent matches. Press refresh to fill in your latest ones.</p></details>
         <details><summary>How are draws counted?</summary><p>A tied score is shown as a draw. It counts as neither a win nor a loss.</p></details>
         <details><summary>Can I install Valtrack as an app?</summary><p>Yes, when you open it from a web address or localhost. Use your browser's Install or Add to Home Screen option. It then opens like an app and shows your saved data offline.</p></details>
@@ -287,6 +313,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
   </form>
 </dialog>
 
+<script src="changelog.js"></script>
 <script src="insights.js"></script>
 <script src="script.js"></script>
 </body>
