@@ -1,5 +1,11 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "2.9", title: "Clutches, ability use, tilt check and accuracy", items: [
+    "Clutches: how many 1v1, 1v2 and larger situations you get, and how many you win.",
+    "Ability use: casts per round for each agent, and whether you win more rounds when you use more utility.",
+    "Tilt check: win rate after a win and after a loss, by game number in a session and by time of day.",
+    "Accuracy over time: headshot percentage and damage per round charts in Progress.",
+  ] },
   { version: "2.8", title: "Economy, sides, opening duels and version history", items: [
     "Economy: round win rate for pistol, eco, force-buy and full-buy rounds, and your team's average spending.",
     "Attack and defence: rounds won and K/D on each side, for all maps and per map.",

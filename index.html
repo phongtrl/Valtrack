@@ -193,6 +193,16 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <div id="opening"></div>
         <p class="hint">The opening duel is the first kill of a round. A death counts as avenged when a teammate kills your killer within 5 seconds, and the same goes for the teammates you avenge.</p>
       </section>
+      <section class="card pad">
+        <h2>Clutches</h2>
+        <div id="clutches"></div>
+        <p class="hint">A clutch is when you are the last one alive on your team against one or more enemies. It counts as won when you survive and your team wins the round.</p>
+      </section>
+      <section class="card pad">
+        <h2>Ability use</h2>
+        <div id="abilities"></div>
+        <p class="hint">Casts per round of your C, Q, E and X abilities, by agent. X is your ultimate.</p>
+      </section>
     </div>
 
     <!-- Progress: trends over time and your rank goal -->
@@ -206,6 +216,11 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <section>
         <h2>Rank history</h2>
         <div id="rr-chart"></div>
+      </section>
+      <section class="card pad">
+        <h2>Tilt check</h2>
+        <div id="tilt"></div>
+        <p class="hint">Based on the matches you have saved in this game mode. A new session starts when two matches are more than 2 hours apart. Small samples can mislead, so look at the number of games.</p>
       </section>
       <section class="card pad">
         <h2>Rank goal</h2>
@@ -270,8 +285,8 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <ul>
         <li><b>Overview:</b> win rate, record, K/D, ACS, current and peak rank, today's session and your recent form.</li>
         <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
-        <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, and opening duels and trades.</li>
-        <li><b>Progress:</b> trend charts (hover or tap a dot for details), rank history and a rank goal estimate.</li>
+        <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, opening duels and trades, clutches and ability use.</li>
+        <li><b>Progress:</b> trend charts (hover or tap a dot for details), accuracy over time, rank history, a tilt check and a rank goal estimate.</li>
         <li><b>Compare:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
         <li>The <b>Game mode</b> selector at the top applies to every tab. It starts on Competitive.</li>
       </ul>
@@ -287,6 +302,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <details><summary>What happens when I open another player's profile?</summary><p>Valtrack loads their matches and rank the same way as yours, and saves them in this browser. Use the "Back to" link above the name, or the Account menu, to return. While you look at them, Compare and Rank goal treat them as the main player.</p></details>
         <details><summary>How are the weapon statistics calculated?</summary><p>Kills and deaths per weapon come from the kill feed of each match. Rounds, damage per round (ADR) and headshot percentage are counted in the rounds where you bought that weapon, so a gun you picked up mid-round is only partly included. Kills per round is the quick measure of impact. Weapon data is saved for matches fetched with this version, so press refresh to load your latest ones.</p></details>
         <details><summary>How are sides, economy and opening duels worked out?</summary><p>Sides come from who planted or defused the spike in each round, since the sides swap after round 12. Buy types come from your team's average loadout value at the start of the round. Opening duels use the first kill of each round, and a trade is a kill on your killer within 5 seconds. Matches where the data is missing are left out. Press refresh to load these for your latest matches.</p></details>
+        <details><summary>How are clutches, ability use and the tilt check worked out?</summary><p>A clutch starts when you are the last one alive on your team against at least one enemy, and counts as won if you survive and your team takes the round. Ability use is the number of casts per round for each agent, and the rounds won with little or lots of utility when the data has it per round. The tilt check compares your win rate after a win with your win rate after a loss within the same session, and by game number and time of day, using the matches you have saved. Small samples can mislead.</p></details>
         <details><summary>Why are older matches missing player details?</summary><p>Player details are only saved for matches fetched with the latest version, and the data source only returns recent matches. Press refresh to fill in your latest ones.</p></details>
         <details><summary>How are draws counted?</summary><p>A tied score is shown as a draw. It counts as neither a win nor a loss.</p></details>
         <details><summary>Can I install Valtrack as an app?</summary><p>Yes, when you open it from a web address or localhost. Use your browser's Install or Add to Home Screen option. It then opens like an app and shows your saved data offline.</p></details>

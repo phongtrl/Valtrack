@@ -428,7 +428,56 @@ function extractRounds(m, me, teamId) {
     });
   });
 
+  // Clutches: you are the last one alive on your team against one or more enemies. Counted as won when you survive and your team takes the round.
+  // clutch: [situations, won] for 1v1, 1v2, 1v3, 1v4 and 1v5, in that order.
+  const clutch = new Array(10).fill(0);
+  byRound.forEach((list, id) => {
+    const alive = new Set(players.map(puuidOf).filter(Boolean));
+    let foes = 0;
+    list.forEach((k) => {
+      alive.delete(puuidOf(k.victim));
+      if (foes || !alive.has(mine)) return;
+      const living = [...alive];
+      if (living.filter((p) => teamOf.get(p) === myTeam).length === 1) foes = living.filter((p) => teamOf.get(p) !== myTeam).length;
+    });
+    if (!foes) return;
+    const round = roundById.get(id);
+    clutch[(foes - 1) * 2]++;
+    if (round && won(round) && alive.has(mine)) clutch[(foes - 1) * 2 + 1]++;
+  });
+
+  // Ability use: casts of the C, Q, E and X abilities, and how often you win rounds with little or a lot of utility.
+  // util.c: casts for the whole match, util.r: rounds, util.b: [rounds, rounds won] with 0-1, 2-3 and 4+ casts (only if the data has them per round).
+  const slotOf = (key) => {
+    const k = String(key).toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (/^(grenade|c)/.test(k)) return 0;
+    if (/^(ability1|q)/.test(k)) return 1;
+    if (/^(ability2|e)/.test(k)) return 2;
+    if (/^(ultimate|x)/.test(k)) return 3;
+    return -1;
+  };
+  const castsOf = (obj) => {
+    const c = [0, 0, 0, 0];
+    Object.entries(obj && typeof obj === "object" ? obj : {}).forEach(([k, v]) => { const s = slotOf(k); if (s >= 0) c[s] += Number(v) || 0; });
+    return c;
+  };
+  const util = { c: castsOf(me?.ability_casts), r: rounds.length };
+  const buckets = [[0, 0], [0, 0], [0, 0]];
+  let perRound = false;
+  rounds.forEach((r) => {
+    const entry = (r?.stats ?? r?.player_stats ?? []).find((e) => puuidOf(e?.player) === mine);
+    if (!entry || !entry.ability_casts || typeof entry.ability_casts !== "object") return;
+    perRound = true;
+    const n = castsOf(entry.ability_casts).reduce((a, b) => a + b, 0);
+    const b = buckets[n <= 1 ? 0 : n <= 3 ? 1 : 2];
+    b[0]++;
+    if (won(r)) b[1]++;
+  });
+  if (perRound) util.b = buckets;
+
   const out = {};
+  if (clutch.some(Boolean)) out.clutch = clutch;
+  if (util.c.some(Boolean) || perRound) out.util = util;
   if (sideKnown) out.sides = sides;
   if (econ.v[1]) out.econ = econ;
   if (byRound.size) out.open = open;

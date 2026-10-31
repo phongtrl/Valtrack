@@ -248,10 +248,14 @@ function renderCharts(view) {
   });
   const mode = $("mode-filter").selectedOptions[0];
   $("charts-note").textContent = `Last ${recent.length} matches · ${mode ? mode.textContent : "all game modes"}`;
+  const mineIn = (m) => (m.details && m.details.players.find(isMine)) || null;
+  const played = recent.map((m, i) => ({ p: mineIn(m), meta: meta[i] })).filter((x) => x.p);
   $("charts").replaceChildren(
     chartCard("Combat score", recent.map((m) => m.acs), (v) => String(Math.round(v)), { meta }),
     chartCard("K/D per match", recent.map(kdOf), (v) => v.toFixed(2), { ref: 1, meta }),
-    chartCard("Win rate, rolling 10", rolling, (v) => Math.round(v) + "%", { ref: 50, min: 0, max: 100, meta })
+    chartCard("Win rate, rolling 10", rolling, (v) => Math.round(v) + "%", { ref: 50, min: 0, max: 100, meta }),
+    chartCard("Headshot percentage", played.map((x) => x.p.hs), (v) => Math.round(v) + "%", { meta: played.map((x) => x.meta) }),
+    chartCard("Damage per round", played.map((x) => x.p.adr), (v) => String(Math.round(v)), { meta: played.map((x) => x.meta) })
   );
 }
 
@@ -443,6 +447,109 @@ function renderOpening(view) {
     { name: "You got the first kill", cells: [["Times", o[0]], ["Rounds won", rate([o[0], o[1]])]] },
     { name: "You died first", cells: [["Times", o[2]], ["Rounds won", rate([o[2], o[3]])]] },
   ], colsFor(2)));
+}
+
+/* ---------- Clutches, ability use and tilt ---------- */
+
+function renderClutches(view) {
+  const box = $("clutches");
+  box.replaceChildren();
+  const t = new Array(10).fill(0);
+  let matches = 0;
+  view.forEach((m) => {
+    if (!m.clutch) return;
+    matches++;
+    m.clutch.forEach((x, i) => { t[i] += x; });
+  });
+  const situations = t.filter((_, i) => i % 2 === 0).reduce((a, b) => a + b, 0);
+  const wins = t.filter((_, i) => i % 2 === 1).reduce((a, b) => a + b, 0);
+  if (!matches || !situations) {
+    box.append(el("p", "empty", matches ? "No clutch situations in these matches yet." : "Clutch data loads with Fetch latest and covers your most recent matches in this game mode."));
+    return;
+  }
+  box.append(chipRow([`Clutches won: ${wins} of ${situations} (${pct(wins / situations)})`]));
+  const names = ["1v1", "1v2", "1v3", "1v4", "1v5"];
+  box.append(statTable(["Situation", "Times", "Won", "Win rate"], names.map((name, i) => ({
+    name,
+    cells: [["Times", t[i * 2]], ["Won", t[i * 2 + 1]], ["Win rate", t[i * 2] ? pct(t[i * 2 + 1] / t[i * 2]) : "—"]],
+  })).filter((r) => r.cells[0][1] > 0), colsFor(3)));
+}
+
+function renderAbilities(view) {
+  const box = $("abilities");
+  box.replaceChildren();
+  const byAgent = new Map();
+  const buckets = [[0, 0], [0, 0], [0, 0]];
+  let haveBuckets = false;
+  view.forEach((m) => {
+    if (!m.util) return;
+    const t = byAgent.get(m.agent) || { rounds: 0, c: [0, 0, 0, 0] };
+    t.rounds += m.util.r;
+    m.util.c.forEach((x, i) => { t.c[i] += x; });
+    byAgent.set(m.agent, t);
+    if (m.util.b) { haveBuckets = true; m.util.b.forEach((b, i) => { buckets[i][0] += b[0]; buckets[i][1] += b[1]; }); }
+  });
+  const rows = [...byAgent].filter(([, t]) => t.rounds > 0);
+  if (!rows.length) { box.append(emptyNote("Ability data")); return; }
+  const rounds = rows.reduce((a, [, t]) => a + t.rounds, 0);
+  const casts = rows.reduce((a, [, t]) => a + t.c.reduce((x, y) => x + y, 0), 0);
+  const ults = rows.reduce((a, [, t]) => a + t.c[3], 0);
+  const matches = view.filter((m) => m.util).length;
+  const low = buckets[0], high = buckets[2];
+  box.append(chipRow([
+    `Ability casts per round: ${(casts / rounds).toFixed(1)}`,
+    `Ultimates per match: ${(ults / matches).toFixed(1)}`,
+    haveBuckets && low[0] >= 20 && high[0] >= 20 && `Rounds won with 4 or more casts: ${pct(high[1] / high[0])}, with 0 to 1 casts: ${pct(low[1] / low[0])}`,
+  ]));
+  const per = (t, i) => (t.c[i] / t.rounds).toFixed(2);
+  box.append(statTable(["Agent", "Rounds", "C", "Q", "E", "X"], rows.sort((a, b) => b[1].rounds - a[1].rounds).slice(0, 8).map(([name, t]) => ({
+    name,
+    cells: [["Rounds", t.rounds], ["C per round", per(t, 0)], ["Q per round", per(t, 1)], ["E per round", per(t, 2)], ["X per round", per(t, 3)]],
+  })), colsFor(5)));
+}
+
+// Win rate after a win or a loss, by game number in a session and by time of day. All from the matches you have saved.
+function renderTilt(view) {
+  const box = $("tilt");
+  box.replaceChildren();
+  const list = [...view].sort((a, b) => matchTime(a) - matchTime(b));
+  if (list.length < 10) { box.append(el("p", "empty", "The tilt check needs at least 10 matches in this game mode.")); return; }
+  const after = { win: [], loss: [] };
+  const position = new Map();
+  const periods = [["Morning (05–11)", []], ["Afternoon (11–17)", []], ["Evening (17–23)", []], ["Night (23–05)", []]];
+  let game = 0;
+  list.forEach((m, i) => {
+    const prev = list[i - 1];
+    const sameSession = prev && matchTime(m) - matchTime(prev) <= 2 * 3600e3; // more than 2 hours apart starts a new session
+    game = sameSession ? game + 1 : 1;
+    if (sameSession && (prev.result === "win" || prev.result === "loss")) after[prev.result].push(m);
+    const slot = Math.min(game, 5);
+    if (!position.has(slot)) position.set(slot, []);
+    position.get(slot).push(m);
+    const h = new Date(matchTime(m)).getHours();
+    periods[h >= 5 && h < 11 ? 0 : h >= 11 && h < 17 ? 1 : h >= 17 && h < 23 ? 2 : 3][1].push(m);
+  });
+  const afterWin = summarize(after.win), afterLoss = summarize(after.loss);
+  let verdict = "";
+  if (afterWin.n >= 10 && afterLoss.n >= 10) {
+    const diff = afterLoss.winRate - afterWin.winRate;
+    verdict = diff <= -0.12 ? "You win noticeably less right after a loss. A short break may help."
+      : diff >= 0.12 ? "You bounce back well after a loss."
+      : "There is no big difference between playing after a win and after a loss.";
+  }
+  box.append(chipRow([
+    afterWin.n && `After a win: ${pct(afterWin.winRate)} won (${afterWin.n} games)`,
+    afterLoss.n && `After a loss: ${pct(afterLoss.winRate)} won (${afterLoss.n} games)`,
+  ]));
+  if (verdict) box.append(el("p", "goal-verdict", verdict));
+  const row = (name, matches) => {
+    const s = summarize(matches);
+    return { name, cells: [["Games", s.n], ["Win rate", s.n ? pct(s.winRate) : "—"], ["K/D", s.n ? s.kd.toFixed(2) : "—"]] };
+  };
+  box.append(el("p", "sub", "By game in a session"));
+  box.append(statTable(["Game", "Games", "Win rate", "K/D"], [1, 2, 3, 4, 5].filter((n) => position.has(n)).map((n) => row(n === 5 ? "Game 5 or later" : `Game ${n}`, position.get(n))), colsFor(3)));
+  box.append(el("p", "sub", "By time of day"));
+  box.append(statTable(["Time", "Games", "Win rate", "K/D"], periods.filter(([, ms]) => ms.length).map(([name, ms]) => row(name, ms)), colsFor(3)));
 }
 
 /* ---------- Teammates ---------- */
@@ -668,5 +775,8 @@ function renderInsights(view) {
   renderSides(view);
   renderEconomy(view);
   renderOpening(view);
+  renderClutches(view);
+  renderAbilities(view);
+  renderTilt(view);
   renderGoal();
 }
