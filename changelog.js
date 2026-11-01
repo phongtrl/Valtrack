@@ -1,5 +1,9 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.0", title: "New logo and server stats", items: [
+    "A new app icon: a V drawn as a progress line, with a dot at each turn.",
+    "Servers: which data centres your matches ran on, how often, and the win rate on each. The highest win rate needs at least 5 games on a server.",
+  ] },
   { version: "2.9", title: "Clutches, ability use, tilt check and accuracy", items: [
     "Clutches: how many 1v1, 1v2 and larger situations you get, and how many you win.",
     "Ability use: casts per round for each agent, and whether you win more rounds when you use more utility.",

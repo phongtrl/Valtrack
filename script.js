@@ -536,6 +536,7 @@ function parseMatch(m) {
   const queue = meta?.queue?.name ?? meta?.queue?.id ?? meta?.mode ?? "Unknown";
   const details = extractDetails(m, played, teamId);
   const weapons = extractWeapons(m, me);
+  const server = String(meta.cluster || "").trim();
   const play = extractRounds(m, me, teamId);
   return {
     id: String(meta.match_id ?? meta.id),
@@ -548,6 +549,7 @@ function parseMatch(m) {
     acs: played > 0 ? Math.round(score / played) : Math.round(score),
     result,
     ...(details ? { details } : {}),
+    ...(server ? { server } : {}),
     ...(weapons ? { weapons } : {}),
     ...(play || {})
   };

@@ -373,6 +373,28 @@ function renderWeapons(view) {
   box.append(el("p", "hint", `Multi-kill rounds across ${matches} ${matches === 1 ? "match" : "matches"}: 2K ${multi[0]} · 3K ${multi[1]} · 4K ${multi[2]} · Ace ${multi[3]}`));
 }
 
+/* ---------- Servers ---------- */
+
+function renderServers(view) {
+  const box = $("servers");
+  box.replaceChildren();
+  const played = view.filter((m) => m.server);
+  if (!played.length) { box.append(emptyNote("Server data")); return; }
+  const rows = groupBy("server", played);
+  const decided = rows.filter((r) => r.n >= 5);
+  const best = decided.length > 1 ? decided.reduce((a, b) => (b.winRate > a.winRate ? b : a)) : null;
+  box.append(chipRow([
+    `Most played: ${rows[0].name} (${rows[0].n} ${rows[0].n === 1 ? "game" : "games"})`,
+    best && `Highest win rate: ${best.name} (${pct(best.winRate)} over ${best.n} games)`,
+    !best && "Highest win rate needs at least 5 games on two or more servers",
+  ]));
+  box.append(statTable(["Server", "Games", "Win rate", "K/D", "ACS"], rows.map((r) => ({
+    name: r.name,
+    bar: r.n / played.length,
+    cells: [["Games", r.n], ["Win rate", pct(r.winRate)], ["K/D", r.kd.toFixed(2)], ["ACS", Math.round(r.acs)]],
+  })), colsFor(4)));
+}
+
 /* ---------- Sides, economy and opening duels ---------- */
 
 const newSides = () => ({ A: [0, 0, 0, 0], D: [0, 0, 0, 0] });
@@ -771,6 +793,7 @@ function renderInsights(view) {
   renderCharts(view);
   renderRrChart();
   renderTeammates(view);
+  renderServers(view);
   renderWeapons(view);
   renderSides(view);
   renderEconomy(view);
