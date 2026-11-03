@@ -79,6 +79,11 @@ async function cached(key, maxAge, loader) {
   return v;
 }
 
+// The saved copy written by cached(), whatever its age: { t, v } or null.
+function savedCopy(key) {
+  try { return JSON.parse(store.get("vt:cache:" + key) || "null"); } catch (e) { return null; }
+}
+
 const fetchedKey = () => "vt:fetched:" + lower(account.name) + "#" + lower(account.tag);
 function fetchedTimes() {
   try { return JSON.parse(store.get(fetchedKey()) || "{}") || {}; } catch (e) { return {}; }
@@ -190,8 +195,6 @@ function setStatus(message, isError = false) {
 
 /* ---------- Lookup (HenrikDev API) ---------- */
 
-let apiCalls = 0; // requests sent this visit, so loops can pace themselves
-
 async function api(path) {
   const wait = (Number(store.get(KEY_BLOCK)) || 0) - Date.now();
   if (wait > 0) { // HenrikDev recently said "too many requests": don't ask again until the pause is over
@@ -207,7 +210,6 @@ async function api(path) {
   }
   const url = API + path;
   let res;
-  apiCalls++;
   try {
     res = await fetch(url, { headers: { "Authorization": key, "Accept": "application/json" }, cache: "no-store" });
     if (res.status === 401 || res.status === 403) {
@@ -928,7 +930,6 @@ function bindEvents() {
   bindHelp();
   bindChangelog();
   bindInsights();
-  bindFriends();
   $("back-link").addEventListener("click", () => {
     const home = previousAccount;
     setPrevious(null);

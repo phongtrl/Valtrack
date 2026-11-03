@@ -259,11 +259,8 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
     <div id="tab-friends" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-friends" hidden>
       <section>
         <h2>Friends</h2>
-        <p class="hint">You and your favorites, ranked. Win rate and K/D cover the last 10 ranked matches. Tap a friend to open their profile.</p>
-        <div class="friends-actions">
-          <button id="friends-refresh" class="quiet small" type="button">Refresh</button>
-          <p id="friends-status" class="hint" role="status" aria-live="polite"></p>
-        </div>
+        <p class="hint">You and your favorites. Nothing is loaded until you tap the wheel next to a friend, so the data source is never asked for everyone at once. Win rate and K/D cover the last 10 ranked matches. Tap a friend to open their profile.</p>
+        <p id="friends-status" class="hint" role="status" aria-live="polite"></p>
         <div id="friends"></div>
       </section>
     </div>
@@ -332,7 +329,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <div class="faq">
         <details><summary>Why do I only see my last 20 matches?</summary><p>The data source only returns your most recent matches. Valtrack keeps every match it has fetched, so your history grows each time you open the app. Open it regularly, and use Export under Account now and then as a backup.</p></details>
         <details><summary>Why does the refresh button sometimes not fetch anything?</summary><p>To stay within the data source's limits, fetches are spaced out: automatic refreshes wait 10 minutes and the button waits one minute. The icon still spins briefly, and the status line tells you when you last fetched. Rank and RR history are only asked for again after a new ranked match, or once a day. If the data source asks us to slow down, the app pauses for a moment.</p></details>
-        <details><summary>How does the Friends tab work?</summary><p>It lists you and everyone you have favorited with the star. Each friend costs up to two requests (rank and their last 10 ranked matches, plus one the first time to find their region), and the results are reused for 10 minutes. Friends load one at a time with a short pause, so a long list never uses up the data source's limit. Your own row uses the matches you already have saved.</p></details>
+        <details><summary>How does the Friends tab work?</summary><p>It lists you and everyone you have favorited with the star. Nothing loads by itself: tap the wheel next to a friend to load just that friend. That costs up to two requests (rank and their last 10 ranked matches, plus one the first time to find their region). What you load is saved, shown the next time without any request, and a second tap within 10 minutes reuses it. Your own win rate and K/D use the matches you already have saved.</p></details>
         <details><summary>Where is my data stored?</summary><p>Only in this browser, on this device. It doesn't appear on other devices, and clearing your browser data removes it. Use Export and Import under Account to back up or move it.</p></details>
         <details><summary>Can I see live matches?</summary><p>No. There is no public live data for Valorant. Matches show up after they have finished, the next time you fetch.</p></details>
         <details><summary>What do ACS, ADR, HS%, FB and FD mean?</summary><p>ACS is your average combat score per round, ADR your average damage per round, and HS% the share of your shots that hit the head. FB and FD are first bloods and first deaths: who got the first kill, or died first, in a round.</p></details>

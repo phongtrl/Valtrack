@@ -1,5 +1,9 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.3", title: "Friends load on demand", items: [
+    "The Friends tab no longer loads everyone at once. Tap the wheel next to a friend to load just them.",
+    "What you have loaded is saved and shown straight away next time, with when it was last updated.",
+  ] },
   { version: "3.2", title: "Friends", items: [
     "A Friends tab: you and your favorites in one table, ranked, with rank, RR, win rate and K/D over the last 10 ranked matches.",
     "Tap a friend to open their profile.",

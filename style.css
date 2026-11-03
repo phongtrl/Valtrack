@@ -324,6 +324,7 @@ dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height
 .tbl-name.with-badge { display: flex; align-items: center; gap: 10px; }
 .tbl-text { flex: 1; min-width: 0; }
 .tbl-text .link { font-weight: 500; text-align: left; overflow-wrap: anywhere; }
+.tbl-name small { display: block; font-size: .74rem; color: var(--muted); }
 .tbl-chips { margin-bottom: 16px; }
 .tbl-row.clickable { cursor: pointer; transition: background .2s; }
 .tbl-row.clickable:hover { background: var(--hover); }
@@ -384,8 +385,6 @@ dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height
 dialog .tl-load p { margin: 0; }
 
 /* ---------- Friends and alerts ---------- */
-.friends-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; }
-.friends-actions .hint { margin: 0; }
 #alerts-toggle[aria-pressed="true"] { color: var(--wood); }
 .toast { position: fixed; z-index: 95; right: var(--edge); bottom: 16px; left: var(--edge); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; max-width: 480px; padding: 12px 14px; font-size: .88rem; color: var(--card); background: var(--ink); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); }
 .toast-actions { display: flex; gap: 8px; }
