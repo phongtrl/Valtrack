@@ -146,6 +146,17 @@ function init() {
   try { previousAccount = JSON.parse(store.get(KEY_PREVIOUS)); } catch (e) { previousAccount = null; }
   if (saved && saved.name && saved.tag) openAccount(saved, true);
   else showWelcome();
+  hideSplash();
+}
+
+function hideSplash() {
+  const splash = $("splash");
+  if (!splash) return;
+  // let the logo finish drawing before fading out
+  setTimeout(() => {
+    splash.classList.add("is-done");
+    setTimeout(() => splash.remove(), 500);
+  }, Math.max(0, 1100 - performance.now()));
 }
 
 function showWelcome() {

@@ -72,9 +72,22 @@ label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 .id-form .tag, .menu-form .tag { flex: 0 0 84px; }
 .hash { padding-bottom: 10px; font: 1.5rem/1 var(--serif); color: var(--muted); }
 
+/* ---------- Splash ---------- */
+.splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--page); transition: opacity .4s ease, visibility .4s; }
+.splash.is-done { opacity: 0; visibility: hidden; }
+.splash-logo { width: min(140px, 36vw); height: auto; overflow: visible; }
+.splash-line { fill: none; stroke: var(--ink); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; animation: splash-draw .7s cubic-bezier(.6, 0, .3, 1) both; }
+.splash-node { fill: var(--ink); stroke: var(--page); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: splash-pop .3s ease-out .35s both; }
+.splash-node + .splash-node { animation-delay: .5s; }
+.splash-peak { fill: var(--wood); transform-box: fill-box; transform-origin: center; animation: splash-pop .35s ease-out .65s both, splash-pulse 1.4s ease-in-out 1s infinite; }
+@keyframes splash-draw { from { stroke-dashoffset: 1; } }
+@keyframes splash-pop { from { transform: scale(0); } }
+@keyframes splash-pulse { 50% { transform: scale(1.18); } }
+
 /* ---------- Welcome ---------- */
 .welcome { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 40px 0; text-align: center; }
-.wordmark { font-size: clamp(2.6rem, 9vw, 3.6rem); letter-spacing: .01em; }
+.wordmark { display: flex; align-items: center; gap: .3em; font-size: clamp(2.6rem, 9vw, 3.6rem); letter-spacing: .01em; }
+.wordmark .logo { width: .9em; height: .78em; }
 .tagline span { display: inline-block; } /* a line break only ever falls between the two sentences */
 .tagline { max-width: 30ch; font-size: 1.1rem; line-height: 1.4; color: var(--ink); }
 .welcome .id-form { width: min(500px, 100%); margin-top: 12px; }
@@ -84,7 +97,9 @@ label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 
 /* ---------- Top bar and navigation ---------- */
 .topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: stretch; gap: 28px; min-height: 60px; margin: 0 calc(-1 * var(--edge)); padding: 0 var(--edge); background: var(--paper); border-bottom: 1px solid var(--line); }
-.brand { display: flex; flex-direction: column; justify-content: center; align-self: center; line-height: 1.2; color: inherit; text-decoration: none; white-space: nowrap; }
+.brand { --logo-gap: var(--paper); display: flex; align-items: center; gap: 10px; align-self: center; line-height: 1.2; color: inherit; text-decoration: none; white-space: nowrap; }
+.brand .logo { flex: none; width: 30px; height: 26px; }
+.brand-text { display: flex; flex-direction: column; justify-content: center; }
 .brand-name { font: 1.25rem var(--serif); letter-spacing: .01em; }
 .brand-sub { font-size: .68rem; color: var(--muted); }
 .brand-sub span { display: inline-block; }
