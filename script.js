@@ -715,9 +715,17 @@ async function syncMatches(manual = true) {
       account.region = await lookupRegion();
       store.set(KEY_ACCOUNT, JSON.stringify(account));
     }
-    const path = `/valorant/v4/matches/${encodeURIComponent(account.region)}/pc/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}?size=${age < 6 * 60 * MIN ? 10 : 20}`;
+    const want = age < 6 * 60 * MIN && matches.length >= LOG_LIMIT ? 10 : LOG_LIMIT;
+    const path = `/valorant/v4/matches/${encodeURIComponent(account.region)}/pc/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}?size=${want}`;
     const json = await api(path);
     const rows = Array.isArray(json.data) ? json.data : [];
+    // The API may cap a page at 10, so fill a fresh device (e.g. a phone) up to the log's 20 with a second page.
+    if (rows.length >= 10 && rows.length < want) {
+      try {
+        const more = await api(`${path.replace(/size=\d+/, `size=${want - rows.length}`)}&start=${rows.length}`);
+        if (Array.isArray(more.data)) rows.push(...more.data);
+      } catch (_) { /* keep the first page */ }
+    }
     if (!rows.length) {
       setStatus("The API responded, but returned no matches for this Riot ID. Check the region and whether match history is available.", true);
       return;

@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.4", title: "20 matches on every device", items: [
+    "A new device, such as your phone, now loads your last 20 matches instead of 10, so the match log is full straight away.",
+  ] },
   { version: "3.3", title: "Friends load on demand", items: [
     "The Friends tab no longer loads everyone at once. Tap the wheel next to a friend to load just them.",
     "What you have loaded is saved and shown straight away next time, with when it was last updated.",
