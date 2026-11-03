@@ -309,25 +309,15 @@ function statTable(headers, rows, cols) {
   headers.forEach((h) => head.append(el("span", "", h)));
   table.append(head);
   rows.forEach((r) => {
-    const name = el("div", "tbl-name" + (r.badge ? " with-badge" : ""));
-    const text = el("div", "tbl-text");
-    if (r.onClick) {
-      const link = el("button", "link", r.name);
-      link.type = "button";
-      link.addEventListener("click", r.onClick);
-      text.append(link);
-    } else {
-      text.append(el("strong", "", r.name));
-    }
+    const name = el("div", "tbl-name");
+    name.append(el("strong", "", r.name));
     if (r.bar !== undefined) {
       const bar = el("div", "bar");
       const fill = el("div", "fill");
       fill.style.width = pct(r.bar);
       bar.append(fill);
-      text.append(bar);
+      name.append(bar);
     }
-    if (r.badge) name.append(r.badge);
-    name.append(text);
     const row = el("div", "tbl-row");
     row.append(name);
     r.cells.forEach(([label, value]) => {
@@ -584,63 +574,6 @@ function renderTilt(view) {
   box.append(statTable(["Time", "Games", "Win rate", "K/D"], periods.filter(([, ms]) => ms.length).map(([name, ms]) => row(name, ms)), colsFor(3)));
 }
 
-/* ---------- Round timeline, best agent per map, alone or with friends ---------- */
-
-// One cell per round: green when your team won it, brown when it lost, with your kills inside. Under it the buy type and the side.
-function timelineEl(rounds) {
-  const box = el("section", "timeline");
-  box.append(el("h3", "", "Rounds"));
-  const grid = el("div", "tl-grid");
-  const buyLetter = ["", "P", "E", "F", "B"], sideLetter = ["", "A", "D"];
-  const buyName = ["", "pistol round", "eco", "force-buy", "full buy"], sideName = ["", "attack", "defence"];
-  rounds.forEach(([won, side, buy, kills, deaths, flags], i) => {
-    const facts = [`Round ${i + 1}: ${won ? "won" : "lost"}`, sideName[side], buyName[buy], `${kills} ${kills === 1 ? "kill" : "kills"}`,
-      deaths ? "you died" : "", flags & 1 ? "first blood" : "", flags & 2 ? "died first" : "", flags & 4 ? "spike planted" : "", flags & 8 ? "spike defused" : ""].filter(Boolean).join(", ");
-    const cell = el("div", "tl-cell");
-    cell.title = facts;
-    cell.setAttribute("aria-label", facts);
-    cell.append(
-      el("small", "", String(i + 1)),
-      el("span", `tl-block ${won ? "won" : "lost"}${deaths ? " died" : ""}${flags & 1 ? " fb" : ""}`, kills ? String(kills) : ""),
-      el("small", "tl-meta", `${buyLetter[buy]}${sideLetter[side]}`)
-    );
-    grid.append(cell);
-  });
-  box.append(grid, el("p", "hint", "The number is your kills. A dot means you got the first kill, a dark line under the block means you died. P pistol, E eco, F force-buy, B full buy, then A attack or D defence. Hover or long-press a round for details."));
-  return box;
-}
-
-function renderBestAgents(view) {
-  const box = $("agent-maps");
-  box.replaceChildren();
-  if (view.length < 5) { box.append(el("p", "empty", "This needs at least 5 matches in this game mode.")); return; }
-  const rows = [...new Set(view.map((m) => m.map))].map((map) => {
-    const list = view.filter((m) => m.map === map);
-    const agents = groupBy("agent", list);
-    const best = agents.filter((a) => a.n >= 3).sort((a, b) => b.winRate - a.winRate || b.n - a.n)[0];
-    return { map, n: list.length, used: agents[0], best };
-  }).sort((a, b) => b.n - a.n);
-  box.append(statTable(["Map", "Most played", "Best win rate"], rows.map((r) => ({
-    name: `${r.map} (${r.n})`,
-    cells: [["Most played", `${r.used.name} (${r.used.n})`], ["Best win rate", r.best ? `${r.best.name} ${pct(r.best.winRate)} (${r.best.n})` : "Needs 3 games"]],
-  })), "minmax(0, 1fr) repeat(2, minmax(0, 1.5fr))"));
-}
-
-function renderParty(view) {
-  const box = $("party");
-  box.replaceChildren();
-  const known = view.filter((m) => m.party);
-  if (!known.length) { box.append(emptyNote("Party data")); return; }
-  const groups = [["Solo", (m) => m.party === 1], ["Duo", (m) => m.party === 2], ["Trio", (m) => m.party === 3], ["Stack of 4 or 5", (m) => m.party >= 4]];
-  const rows = groups.map(([name, test]) => ({ name, s: summarize(known.filter(test)) })).filter((r) => r.s.n);
-  const solo = summarize(known.filter((m) => m.party === 1)), together = summarize(known.filter((m) => m.party > 1));
-  box.append(chipRow([solo.n >= 5 && together.n >= 5 && `Solo: ${pct(solo.winRate)} won (${solo.n} games). With friends: ${pct(together.winRate)} won (${together.n} games).`]));
-  box.append(statTable(["Playing", "Games", "Win rate", "K/D", "ACS"], rows.map(({ name, s }) => ({
-    name,
-    cells: [["Games", s.n], ["Win rate", pct(s.winRate)], ["K/D", s.kd.toFixed(2)], ["ACS", Math.round(s.acs)]],
-  })), colsFor(4)));
-}
-
 /* ---------- Teammates ---------- */
 
 function renderTeammates(view) {
@@ -861,8 +794,6 @@ function renderInsights(view) {
   renderRrChart();
   renderTeammates(view);
   renderServers(view);
-  renderBestAgents(view);
-  renderParty(view);
   renderWeapons(view);
   renderSides(view);
   renderEconomy(view);
