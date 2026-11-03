@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.6", title: "Gentler on the data limit", items: [
+    "Loading an act now stops after your last 50 matches, so it no longer runs out the data source's limit.",
+  ] },
   { version: "3.5", title: "The whole act, page by page", items: [
     "Valtrack now loads every match in the current act, on PC and console, instead of only the most recent ones.",
     "The match log shows 10 matches per page, with Newer and Older buttons.",

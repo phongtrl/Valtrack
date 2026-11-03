@@ -690,18 +690,19 @@ let syncing = false;
 
 const PLATFORMS = ["pc", "console"];
 const PAGE_SIZE = 10;
+const MAX_LOOKBACK = 50; // more pages than this runs out the HenrikDev quota
 const PAGE_GAP = 2500; // stays under HenrikDev's 30 requests a minute while loading a whole act
 const seasonOf = (m) => m?.metadata?.season?.short || m?.metadata?.season?.id || null;
 const matchIdOf = (m) => String(m?.metadata?.match_id ?? m?.metadata?.id ?? m?.meta?.id ?? "");
 
-// Pages back through one platform until the current act ends. Once an act is fully loaded, later syncs stop at the first saved match.
+// Pages back through one platform until the current act ends or MAX_LOOKBACK matches are checked. Once done, later syncs stop at the first saved match.
 async function fetchActMatches(platform, known, before) {
   const base = `/valorant/v4/matches/${encodeURIComponent(account.region)}/${platform}/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}`;
   const doneKey = "act:" + platform;
   const who = account;
   const rows = [];
   let act = null;
-  for (let start = 0; start < 500; start += PAGE_SIZE) {
+  for (let start = 0; start < MAX_LOOKBACK; start += PAGE_SIZE) {
     if (start) await new Promise((resolve) => setTimeout(resolve, PAGE_GAP));
     if (account !== who) return rows;
     let page;
@@ -717,7 +718,7 @@ async function fetchActMatches(platform, known, before) {
     act = act || seasonOf(page[0]);
     const inAct = page.filter((m) => seasonOf(m) === act);
     rows.push(...inAct);
-    if (start) setStatus(`Loading every match in this act… ${before + rows.length} so far.`);
+    if (start) setStatus(`Loading your last ${MAX_LOOKBACK} matches in this act… ${before + rows.length} so far.`);
     if (!act) return rows;
     if (page.length < PAGE_SIZE || inAct.length < page.length) break;
     if (fetchedTimes()[doneKey] === act && inAct.some((m) => known.has(matchIdOf(m)))) break;
