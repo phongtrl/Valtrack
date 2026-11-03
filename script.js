@@ -945,6 +945,12 @@ function bindEvents() {
     setPrevious(null);
     openAccount({ ...home }, true);
   });
+  document.querySelector(".brand").addEventListener("click", (e) => {
+    if ($("back-link").hidden) return;
+    e.preventDefault();
+    showTab("overview");
+    $("back-link").click();
+  });
   $("theme-toggle").addEventListener("click", () => {
     store.set(KEY_THEME, document.documentElement.dataset.theme === "dark" ? "light" : "dark");
     applyTheme();

@@ -2,6 +2,7 @@
 const RELEASES = [
   { version: "3.4", title: "20 matches on every device", items: [
     "A new device, such as your phone, now loads your last 20 matches instead of 10, so the match log is full straight away.",
+    "While looking at another player, tapping the Valtrack logo takes you straight back to your own profile.",
   ] },
   { version: "3.3", title: "Friends load on demand", items: [
     "The Friends tab no longer loads everyone at once. Tap the wheel next to a friend to load just them.",
