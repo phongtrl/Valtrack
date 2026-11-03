@@ -2,6 +2,7 @@
 const RELEASES = [
   { version: "3.6", title: "Gentler on the data limit", items: [
     "Loading an act now stops after your last 50 matches, so it no longer runs out the data source's limit.",
+    "Valtrack is made for PC players, so console matches are no longer requested. Fewer requests, and no more server errors from accounts without console history.",
   ] },
   { version: "3.5", title: "The whole act, page by page", items: [
     "Valtrack now loads every match in the current act, on PC and console, instead of only the most recent ones.",
