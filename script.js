@@ -176,6 +176,7 @@ function openAccount(acc, autoFetch) {
   account = acc;
   store.set(KEY_ACCOUNT, JSON.stringify(account));
   matches = loadMatches();
+  logPage = 0;
   rankNow = null;
   loadRr();
   $("welcome").hidden = true;
@@ -687,6 +688,44 @@ async function fetchRankStats(force = false, maxAge = FRESH_MS) {
 
 let syncing = false;
 
+const PLATFORMS = ["pc", "console"];
+const PAGE_SIZE = 10;
+const PAGE_GAP = 2500; // stays under HenrikDev's 30 requests a minute while loading a whole act
+const seasonOf = (m) => m?.metadata?.season?.short || m?.metadata?.season?.id || null;
+const matchIdOf = (m) => String(m?.metadata?.match_id ?? m?.metadata?.id ?? m?.meta?.id ?? "");
+
+// Pages back through one platform until the current act ends. Once an act is fully loaded, later syncs stop at the first saved match.
+async function fetchActMatches(platform, known, before) {
+  const base = `/valorant/v4/matches/${encodeURIComponent(account.region)}/${platform}/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}`;
+  const doneKey = "act:" + platform;
+  const who = account;
+  const rows = [];
+  let act = null;
+  for (let start = 0; start < 500; start += PAGE_SIZE) {
+    if (start) await new Promise((resolve) => setTimeout(resolve, PAGE_GAP));
+    if (account !== who) return rows;
+    let page;
+    try {
+      page = (await api(`${base}?size=${PAGE_SIZE}&start=${start}`)).data;
+    } catch (e) {
+      if (start === 0 && platform !== "pc" && [400, 404].includes(e.status)) { markFetched("empty:" + platform); return rows; }
+      if (start === 0) throw e;
+      return rows; // keep what arrived; the act is finished on a later sync
+    }
+    page = Array.isArray(page) ? page : [];
+    if (start === 0 && !page.length && platform !== "pc") markFetched("empty:" + platform);
+    act = act || seasonOf(page[0]);
+    const inAct = page.filter((m) => seasonOf(m) === act);
+    rows.push(...inAct);
+    if (start) setStatus(`Loading every match in this act… ${before + rows.length} so far.`);
+    if (!act) return rows;
+    if (page.length < PAGE_SIZE || inAct.length < page.length) break;
+    if (fetchedTimes()[doneKey] === act && inAct.some((m) => known.has(matchIdOf(m)))) break;
+  }
+  store.set(fetchedKey(), JSON.stringify({ ...fetchedTimes(), [doneKey]: act }));
+  return rows;
+}
+
 // Gives a tap on Fetch latest visible feedback even when the data is fresh and no request is needed.
 function spinBriefly(ms = 700) {
   const button = $("sync");
@@ -715,17 +754,14 @@ async function syncMatches(manual = true) {
       account.region = await lookupRegion();
       store.set(KEY_ACCOUNT, JSON.stringify(account));
     }
-    const want = age < 6 * 60 * MIN && matches.length >= LOG_LIMIT ? 10 : LOG_LIMIT;
-    const path = `/valorant/v4/matches/${encodeURIComponent(account.region)}/pc/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}?size=${want}`;
-    const json = await api(path);
-    const rows = Array.isArray(json.data) ? json.data : [];
-    // The API may cap a page at 10, so fill a fresh device (e.g. a phone) up to the log's 20 with a second page.
-    if (rows.length >= 10 && rows.length < want) {
-      try {
-        const more = await api(`${path.replace(/size=\d+/, `size=${want - rows.length}`)}&start=${rows.length}`);
-        if (Array.isArray(more.data)) rows.push(...more.data);
-      } catch (_) { /* keep the first page */ }
+    const known = new Set(matches.map((m) => String(m.id)));
+    const who = account;
+    const rows = [];
+    for (const platform of PLATFORMS) {
+      if (platform !== "pc" && Date.now() - lastFetched("empty:" + platform) < DAY) continue;
+      rows.push(...await fetchActMatches(platform, known, rows.length));
     }
+    if (account !== who) return; // another profile was opened meanwhile
     if (!rows.length) {
       setStatus("The API responded, but returned no matches for this Riot ID. Check the region and whether match history is available.", true);
       return;
@@ -997,7 +1033,7 @@ function bindEvents() {
 
   $("favorite-current").addEventListener("click", toggleCurrentFavorite);
   $("sync").addEventListener("click", () => syncMatches(true));
-  $("mode-filter").addEventListener("change", () => { modeChosen = true; render(); });
+  $("mode-filter").addEventListener("change", () => { modeChosen = true; logPage = 0; render(); });
 
   $("export").addEventListener("click", exportData);
   $("backup-now").addEventListener("click", exportData);
@@ -1182,12 +1218,16 @@ function renderLog(visibleMatches) {
   body.replaceChildren();
   $("log-empty").hidden = visibleMatches.length > 0;
   $("log-empty").textContent = matches.length ? "No matches for this game mode." : "No matches yet. Fetch your latest to load match history.";
-  const shown = showAllMatches ? visibleMatches : visibleMatches.slice(0, LOG_LIMIT);
-  const toggle = $("log-toggle");
-  toggle.hidden = visibleMatches.length <= LOG_LIMIT;
-  toggle.textContent = showAllMatches ? `Show last ${LOG_LIMIT}` : "Show all";
+  const pages = Math.max(1, Math.ceil(visibleMatches.length / LOG_PAGE));
+  logPage = Math.min(Math.max(0, logPage), pages - 1);
+  const from = logPage * LOG_PAGE;
+  const shown = visibleMatches.slice(from, from + LOG_PAGE);
+  $("log-pager").hidden = pages <= 1;
+  $("log-page").textContent = `Page ${logPage + 1} of ${pages}`;
+  $("log-prev").disabled = logPage === 0;
+  $("log-next").disabled = logPage >= pages - 1;
   $("log-count").textContent = matches.length
-    ? `Showing ${showAllMatches || visibleMatches.length <= LOG_LIMIT ? "all " + visibleMatches.length : "the last " + shown.length + " of " + visibleMatches.length} (${matches.length} saved in total).`
+    ? `${visibleMatches.length} ${visibleMatches.length === 1 ? "match" : "matches"}${shown.length ? `, showing ${from + 1}–${from + shown.length}` : ""} (${matches.length} saved in total).`
     : "Your saved matches will appear here.";
   shown.forEach((m) => {
     const tr = el("tr");
@@ -1766,12 +1806,15 @@ function bindMatchDetail() {
 
 /* ---------- Match log length ---------- */
 
-const LOG_LIMIT = 20;
-let showAllMatches = false;
-$("log-toggle").addEventListener("click", () => {
-  showAllMatches = !showAllMatches;
-  render();
-});
+const LOG_PAGE = 10;
+let logPage = 0;
+function turnLogPage(step) {
+  logPage += step;
+  renderLog(scope());
+  $("tab-matches").scrollIntoView({ block: "start" });
+}
+$("log-prev").addEventListener("click", () => turnLogPage(-1));
+$("log-next").addEventListener("click", () => turnLogPage(1));
 
 /* ---------- "Saved on this device" notice ---------- */
 

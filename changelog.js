@@ -1,5 +1,9 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.5", title: "The whole act, page by page", items: [
+    "Valtrack now loads every match in the current act, on PC and console, instead of only the most recent ones.",
+    "The match log shows 10 matches per page, with Newer and Older buttons.",
+  ] },
   { version: "3.4", title: "20 matches on every device", items: [
     "A new device, such as your phone, now loads your last 20 matches instead of 10, so the match log is full straight away.",
     "While looking at another player, tapping the Valtrack logo takes you straight back to your own profile.",

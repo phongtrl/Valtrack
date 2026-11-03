@@ -167,7 +167,6 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <section>
         <div class="section-head">
           <h2>Match log</h2>
-          <button id="log-toggle" class="quiet" type="button" hidden>Show all</button>
         </div>
         <p id="log-count" class="hint" aria-live="polite"></p>
         <p class="hint">Select a match to see every player, K/D, ACS and who dominated who.</p>
@@ -178,6 +177,11 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
           </table>
         </div>
         <p id="log-empty" class="empty" hidden>No matches yet. Fetch your latest to load match history.</p>
+        <nav id="log-pager" class="pager" aria-label="Match log pages" hidden>
+          <button id="log-prev" class="quiet" type="button">← Newer</button>
+          <span id="log-page" aria-live="polite"></span>
+          <button id="log-next" class="quiet" type="button">Older →</button>
+        </nav>
       </section>
     </div>
 
@@ -327,7 +331,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <p class="note"><b>On a phone,</b> swipe left or right anywhere on the page to change tab.</p>
       <h3>FAQ</h3>
       <div class="faq">
-        <details><summary>Why do I only see my last 20 matches?</summary><p>The data source only returns your most recent matches. Valtrack keeps every match it has fetched, so your history grows each time you open the app. Open it regularly, and use Export under Account now and then as a backup.</p></details>
+        <details><summary>Which matches does Valtrack load?</summary><p>Every match in the current act, on PC and console. The first load of an act can take a little while, because matches arrive 10 at a time and are paced to stay within the data source's limit. After that only new matches are fetched. Valtrack keeps every match it has fetched, so older acts stay too. Use Export under Account now and then as a backup.</p></details>
         <details><summary>Why does the refresh button sometimes not fetch anything?</summary><p>To stay within the data source's limits, fetches are spaced out: automatic refreshes wait 10 minutes and the button waits one minute. The icon still spins briefly, and the status line tells you when you last fetched. Rank and RR history are only asked for again after a new ranked match, or once a day. If the data source asks us to slow down, the app pauses for a moment.</p></details>
         <details><summary>How does the Friends tab work?</summary><p>It lists you and everyone you have favorited with the star. Nothing loads by itself: tap the wheel next to a friend to load just that friend. That costs up to two requests (rank and their last 10 ranked matches, plus one the first time to find their region). What you load is saved, shown the next time without any request, and a second tap within 10 minutes reuses it. Your own win rate and K/D use the matches you already have saved.</p></details>
         <details><summary>Where is my data stored?</summary><p>Only in this browser, on this device. It doesn't appear on other devices, and clearing your browser data removes it. Use Export and Import under Account to back up or move it.</p></details>
