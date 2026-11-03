@@ -298,7 +298,7 @@ function weaponStats(list) {
   return { rows, multi, matches };
 }
 
-// A small table. headers: column titles. rows: { name, bar (0 to 1, optional), cells: [[label shown on phones, value], ...] }.
+// A small table. headers: column titles. rows: { name, bar (0 to 1, optional), badge (element, optional), onClick (optional), cells: [[label shown on phones, value], ...] }.
 const colsFor = (n) => `minmax(0, 2.2fr) repeat(${n}, minmax(64px, 1fr))`;
 const emptyNote = (what) => el("p", "empty", `${what} loads with Fetch latest and covers your most recent matches in this game mode.`);
 
@@ -309,8 +309,17 @@ function statTable(headers, rows, cols) {
   headers.forEach((h) => head.append(el("span", "", h)));
   table.append(head);
   rows.forEach((r) => {
-    const name = el("div", "tbl-name");
-    name.append(el("strong", "", r.name));
+    const name = el("div", "tbl-name" + (r.badge ? " with-badge" : ""));
+    if (r.badge) name.append(r.badge);
+    const text = r.badge ? el("div", "tbl-text") : name;
+    if (r.onClick) {
+      const link = el("button", "link", r.name);
+      link.type = "button";
+      text.append(link);
+    } else {
+      text.append(el("strong", "", r.name));
+    }
+    if (r.badge) name.append(text);
     if (r.bar !== undefined) {
       const bar = el("div", "bar");
       const fill = el("div", "fill");
@@ -318,7 +327,8 @@ function statTable(headers, rows, cols) {
       bar.append(fill);
       name.append(bar);
     }
-    const row = el("div", "tbl-row");
+    const row = el("div", "tbl-row" + (r.onClick ? " clickable" : ""));
+    if (r.onClick) row.addEventListener("click", r.onClick); // the whole row is the tap target; the name button gives keyboard access
     row.append(name);
     r.cells.forEach(([label, value]) => {
       const cell = el("span", "", String(value));

@@ -1,5 +1,10 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.2", title: "Friends", items: [
+    "A Friends tab: you and your favorites in one table, ranked, with rank, RR, win rate and K/D over the last 10 ranked matches.",
+    "Tap a friend to open their profile.",
+    "Friends load one at a time and are paced to stay within the data source's limit. Saved results are reused for 10 minutes, and your own row costs no requests.",
+  ] },
   { version: "3.1", title: "Round timeline and fewer requests", items: [
     "Round-by-round timeline in each match: who won every round, how it ended, how both teams bought, the spike plants and defuses, and every kill in order.",
     "Older matches without rounds or player details can be loaded on their own with one request.",

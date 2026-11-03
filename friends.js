@@ -41,31 +41,41 @@ async function loadForm(f, force) {
     });
   }
   const s = summarize(rows);
-  friendData.set(key, { ...entry, form: { n: s.n, winRate: s.winRate, kd: s.kd } });
+  friendData.set(key, { ...friendData.get(key), form: { n: s.n, winRate: s.winRate, kd: s.kd } });
 }
 
-// One friend at a time, with a short pause, so a long list never floods the data source.
-async function runFriends(task, force) {
+async function loadFriendRow(f, force) {
+  await loadFriend(f, force);
+  await loadForm(f, force);
+}
+
+// One friend at a time. After each one that needed the data source, wait about 2 s per request, which stays under its 30 a minute.
+async function runFriends(list, force) {
   if (friendsBusy || !account) return;
   friendsBusy = true;
   const status = $("friends-status");
   try {
-    for (const f of friendList()) {
+    for (const f of list) {
       status.textContent = `Loading ${f.name}…`;
+      const before = apiCalls;
       try {
-        await task(f, force);
+        await loadFriendRow(f, force);
       } catch (e) {
         if (e.status === 429) throw e; // the data source wants us to slow down: stop here
         friendData.set(friendKey(f), { ...(friendData.get(friendKey(f)) || {}), error: e.status === 404 ? "Not found" : "Unavailable" });
       }
       renderFriends();
-      await pause(300);
+      await pause((apiCalls - before) * 2100);
     }
     status.textContent = "";
   } catch (e) {
     status.textContent = e.message;
+    friendsBusy = false;
+    return;
   }
   friendsBusy = false;
+  const missing = friendList().filter((f) => !friendData.has(friendKey(f)));
+  if (missing.length && $("tab-friends") && !$("tab-friends").hidden) runFriends(missing, false); // favorites added while loading
 }
 
 function renderFriends() {
@@ -73,13 +83,13 @@ function renderFriends() {
   if (!box || !account) return;
   box.replaceChildren();
   const rows = friendList().map((f) => ({ f, d: friendData.get(friendKey(f)) || {} })).sort((a, b) => (b.d.score ?? -1) - (a.d.score ?? -1));
-  if (rows.length < 2) box.append(el("p", "hint", "Favorite a few friends with the star and they appear here, ranked."));
-  box.append(statTable(["Player", "Rank", "RR", "Last 10", "K/D"], rows.map(({ f, d }) => ({
+  if (rows.length < 2) box.append(el("p", "hint", "Favorite a few friends with the star next to their name and they appear here, ranked."));
+  box.append(statTable(["Player", "Rank", "RR", "Win rate", "K/D"], rows.map(({ f, d }) => ({
     name: f.me ? `${f.name}#${f.tag} (you)` : `${f.name}#${f.tag}`,
-    badge: d.tierName ? rankBadge(d.tierName, 26) : undefined,
+    badge: d.tierName && parseRank(d.tierName) ? rankBadge(d.tierName, 26) : undefined,
     onClick: f.me ? undefined : () => viewProfile(f),
     cells: [
-      ["Rank", d.error || d.tierName || "…"],
+      ["Rank", d.tierName || d.error || "…"],
       ["RR", d.score === null || d.score === undefined ? "—" : d.rr],
       ["Win rate, last 10 ranked", d.form && d.form.n ? `${pct(d.form.winRate)} (${d.form.n})` : "—"],
       ["K/D, last 10 ranked", d.form && d.form.n ? d.form.kd.toFixed(2) : "—"],
@@ -87,13 +97,17 @@ function renderFriends() {
   })), colsFor(4)));
 }
 
-// Called when the Friends tab opens. Ranks are remembered for 10 minutes, so reopening the tab costs nothing.
+// Called when the Friends tab opens or the favorites change. Saved data is reused for 10 minutes, so reopening the tab costs nothing.
 function onFriendsTab() {
   if (!account) return;
   renderFriends();
-  if (Date.now() - friendsLoadedAt < FRESH_MS) return;
-  friendsLoadedAt = Date.now();
-  runFriends(loadFriend, false);
+  if (Date.now() - friendsLoadedAt >= FRESH_MS) {
+    friendsLoadedAt = Date.now();
+    runFriends(friendList(), false);
+  } else {
+    const missing = friendList().filter((f) => !friendData.has(friendKey(f)));
+    if (missing.length) runFriends(missing, false);
+  }
 }
 
 /* ---------- Match alerts: only while this page is open ---------- */
@@ -134,16 +148,8 @@ function startAlerts() {
 
 function bindFriends() {
   $("friends-refresh").addEventListener("click", () => {
-    if (Date.now() - friendsLoadedAt < 60000) { $("friends-status").textContent = "Ranks were loaded a moment ago."; return; }
+    if (Date.now() - friendsLoadedAt < MIN) { $("friends-status").textContent = "Friends were loaded a moment ago."; return; }
     friendsLoadedAt = Date.now();
-    runFriends(loadFriend, true);
+    runFriends(friendList(), true);
   });
-  $("friends-form").addEventListener("click", () => runFriends(loadForm, false));
-  $("alerts-toggle").addEventListener("click", () => {
-    store.set(KEY_ALERTS, alertsOn() ? "0" : "1");
-    if (alertsOn() && "Notification" in window && Notification.permission === "default") Notification.requestPermission();
-    startAlerts();
-  });
-  $("toast-close").addEventListener("click", () => { $("toast").hidden = true; });
-  startAlerts();
 }

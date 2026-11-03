@@ -190,6 +190,8 @@ function setStatus(message, isError = false) {
 
 /* ---------- Lookup (HenrikDev API) ---------- */
 
+let apiCalls = 0; // requests sent this visit, so loops can pace themselves
+
 async function api(path) {
   const wait = (Number(store.get(KEY_BLOCK)) || 0) - Date.now();
   if (wait > 0) { // HenrikDev recently said "too many requests": don't ask again until the pause is over
@@ -205,6 +207,7 @@ async function api(path) {
   }
   const url = API + path;
   let res;
+  apiCalls++;
   try {
     res = await fetch(url, { headers: { "Authorization": key, "Accept": "application/json" }, cache: "no-store" });
     if (res.status === 401 || res.status === 403) {
@@ -548,13 +551,13 @@ function extractTimeline(m, teamId, details) {
   });
 }
 
-function parseMatch(m) {
+function parseMatch(m, who = account) {
   const meta = m?.metadata || m?.meta || {};
   const players = Array.isArray(m?.players) ? m.players : [];
   const me = players.find((p) => {
     const riotId = p?.name || p?.game_name || p?.riot_id_name || p?.riotIdName;
     const tag = p?.tag || p?.tag_line || p?.riot_id_tag || p?.riotIdTag;
-    return lower(riotId) === lower(account.name) && lower(tag) === lower(account.tag);
+    return lower(riotId) === lower(who.name) && lower(tag) === lower(who.tag);
   });
   if (!me || !(meta.match_id || meta.id)) return null;
 
@@ -787,6 +790,7 @@ function toggleCurrentFavorite() {
 }
 function renderFavorites() {
   renderCmpFavorites();
+  if (activeTab === "friends") onFriendsTab();
   const favorites = getFavorites();
   const panel = $("favorites-panel");
   const welcomeList = $("favorites-list");
@@ -829,7 +833,7 @@ function closeAccountMenu() {
 
 /* ---------- Tabs ---------- */
 
-const TABS = ["overview", "matches", "stats", "progress", "compare"];
+const TABS = ["overview", "matches", "stats", "progress", "friends", "compare"];
 
 let activeTab = null;
 
@@ -850,6 +854,7 @@ function showTab(name, focus = false) {
     if (on && focus) button.focus();
   });
   store.set(KEY_TAB, name);
+  if (name === "friends") onFriendsTab();
 }
 
 // The phone menu (three bars). On wide screens the same markup is simply the top bar.
@@ -923,6 +928,7 @@ function bindEvents() {
   bindHelp();
   bindChangelog();
   bindInsights();
+  bindFriends();
   $("back-link").addEventListener("click", () => {
     const home = previousAccount;
     setPrevious(null);
