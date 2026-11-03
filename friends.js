@@ -47,10 +47,13 @@ async function loadFriendNow(f) {
     return;
   }
   const key = friendKey(f);
+  const started = Date.now();
   friendLoading = key;
   friendErrors.delete(key);
   status.textContent = `Loading ${f.name}…`;
   renderFriends();
+  const pressed = document.querySelector(`#friends [data-friend="${CSS.escape(key)}"]`);
+  if (pressed) pressed.focus();
   try {
     const region = f.region || (await lookupRegion(f.name, f.tag));
     await fetchMmr(f.name, f.tag, region);
@@ -66,8 +69,13 @@ async function loadFriendNow(f) {
     friendErrors.set(key, e.status === 404 ? "Not found" : "Unavailable");
     status.textContent = e.message || "Could not load this friend.";
   } finally {
+    // saved data returns instantly, so keep the wheel turning long enough to be seen
+    const rest = 700 - (Date.now() - started);
+    if (rest > 0) await new Promise((resolve) => setTimeout(resolve, rest));
     friendLoading = null;
     renderFriends();
+    const again = document.querySelector(`#friends [data-friend="${CSS.escape(key)}"]`);
+    if (again) again.focus();
   }
 }
 
@@ -77,6 +85,7 @@ function friendButton(f) {
   const loading = friendLoading === friendKey(f);
   const b = el("button", "tool icon-only" + (loading ? " is-loading" : ""));
   b.type = "button";
+  b.dataset.friend = friendKey(f);
   b.innerHTML = REFRESH_SVG;
   b.setAttribute("aria-label", `Load ${f.name}`);
   b.title = `Load ${f.name}`;
