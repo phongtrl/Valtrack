@@ -1215,10 +1215,12 @@ function renderLog(visibleMatches) {
   logPage = Math.min(Math.max(0, logPage), pages - 1);
   const from = logPage * LOG_PAGE;
   const shown = visibleMatches.slice(from, from + LOG_PAGE);
-  $("log-pager").hidden = pages <= 1;
-  $("log-page").textContent = `Page ${logPage + 1} of ${pages}`;
-  $("log-prev").disabled = logPage === 0;
-  $("log-next").disabled = logPage >= pages - 1;
+  document.querySelectorAll("[data-pager]").forEach((pager) => {
+    pager.hidden = pages <= 1;
+    pager.querySelector("[data-page-label]").textContent = `Page ${logPage + 1} of ${pages}`;
+    pager.querySelector('[data-step="-1"]').disabled = logPage === 0;
+    pager.querySelector('[data-step="1"]').disabled = logPage >= pages - 1;
+  });
   $("log-count").textContent = matches.length
     ? `${visibleMatches.length} ${visibleMatches.length === 1 ? "match" : "matches"}${shown.length ? `, showing ${from + 1}–${from + shown.length}` : ""} (${matches.length} saved in total).`
     : "Your saved matches will appear here.";
@@ -1806,8 +1808,9 @@ function turnLogPage(step) {
   renderLog(scope());
   $("tab-matches").scrollIntoView({ block: "start" });
 }
-$("log-prev").addEventListener("click", () => turnLogPage(-1));
-$("log-next").addEventListener("click", () => turnLogPage(1));
+document.querySelectorAll("[data-pager] [data-step]").forEach((button) => {
+  button.addEventListener("click", () => turnLogPage(Number(button.dataset.step)));
+});
 
 /* ---------- "Saved on this device" notice ---------- */
 

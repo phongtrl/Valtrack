@@ -170,6 +170,11 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         </div>
         <p id="log-count" class="hint" aria-live="polite"></p>
         <p class="hint">Select a match to see every player, K/D, ACS and who dominated who.</p>
+        <nav class="pager pager-top" aria-label="Match log pages, top" data-pager hidden>
+          <button class="quiet" type="button" data-step="-1">← Newer</button>
+          <span data-page-label></span>
+          <button class="quiet" type="button" data-step="1">Older →</button>
+        </nav>
         <div class="table-wrap card">
           <table>
             <thead><tr><th>Date</th><th>Mode</th><th>Map</th><th>Agent</th><th>Result</th><th>Score</th><th>K / D / A</th><th>K/D</th><th>ACS</th><th aria-label="Details"></th></tr></thead>
@@ -177,10 +182,10 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
           </table>
         </div>
         <p id="log-empty" class="empty" hidden>No matches yet. Fetch your latest to load match history.</p>
-        <nav id="log-pager" class="pager" aria-label="Match log pages" hidden>
-          <button id="log-prev" class="quiet" type="button">← Newer</button>
-          <span id="log-page" aria-live="polite"></span>
-          <button id="log-next" class="quiet" type="button">Older →</button>
+        <nav class="pager" aria-label="Match log pages" data-pager hidden>
+          <button class="quiet" type="button" data-step="-1">← Newer</button>
+          <span data-page-label aria-live="polite"></span>
+          <button class="quiet" type="button" data-step="1">Older →</button>
         </nav>
       </section>
     </div>
