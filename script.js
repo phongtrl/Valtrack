@@ -387,6 +387,7 @@ function extractRounds(m, me, teamId) {
 
   // Buy type from the team's average loadout value per player at the start of the round.
   const econ = { pistol: [0, 0], eco: [0, 0], force: [0, 0], full: [0, 0], v: [0, 0] };
+  const kindOf = new Map();
   rounds.forEach((r, i) => {
     const id = rid(r, i);
     const values = (r?.stats ?? r?.player_stats ?? [])
@@ -396,6 +397,7 @@ function extractRounds(m, me, teamId) {
     if (!values.length) return;
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     const kind = id === 0 || id === 12 ? "pistol" : avg < 1800 ? "eco" : avg < 3300 ? "force" : "full";
+    kindOf.set(id, kind);
     econ[kind][0]++;
     if (won(r)) econ[kind][1]++;
     econ.v[0] += avg;
@@ -426,6 +428,23 @@ function extractRounds(m, me, teamId) {
         if (revenge && puuidOf(revenge.killer) === mine) open[7]++;
       }
     });
+  });
+
+  // Timeline, one entry per round: [won, side (0 unknown, 1 attack, 2 defence), buy (0 unknown, 1 pistol, 2 eco, 3 force, 4 full),
+  // your kills, your deaths, flags (1 first blood, 2 first death, 4 spike planted, 8 spike defused)].
+  const BUY = { pistol: 1, eco: 2, force: 3, full: 4 };
+  const timeline = rounds.map((r, i) => {
+    const id = rid(r, i);
+    const list = byRound.get(id) || [];
+    const opener = list[0];
+    const side = sideOf(id);
+    const flags = (opener && puuidOf(opener.killer) === mine ? 1 : 0) | (opener && puuidOf(opener.victim) === mine ? 2 : 0) | (r?.plant ? 4 : 0) | (r?.defuse ? 8 : 0);
+    return [
+      won(r) ? 1 : 0, side === "A" ? 1 : side === "D" ? 2 : 0, BUY[kindOf.get(id)] || 0,
+      list.filter((k) => puuidOf(k.killer) === mine && puuidOf(k.victim) !== mine).length,
+      list.filter((k) => puuidOf(k.victim) === mine).length,
+      flags,
+    ];
   });
 
   // Clutches: you are the last one alive on your team against one or more enemies. Counted as won when you survive and your team takes the round.
@@ -481,16 +500,24 @@ function extractRounds(m, me, teamId) {
   if (sideKnown) out.sides = sides;
   if (econ.v[1]) out.econ = econ;
   if (byRound.size) out.open = open;
+  if (rounds.length) out.timeline = timeline;
   return Object.keys(out).length ? out : null;
 }
 
-function parseMatch(m) {
+// How many players on your team queued together with you. 1 means you played alone; 0 when the data has no party information.
+function partySize(players, me, teamId) {
+  const id = String(me?.party_id ?? "");
+  if (!id || !Array.isArray(players)) return 0;
+  return players.filter((p) => String(p?.team_id ?? "") === String(teamId) && String(p?.party_id ?? "") === id).length;
+}
+
+function parseMatch(m, who = account) {
   const meta = m?.metadata || m?.meta || {};
   const players = Array.isArray(m?.players) ? m.players : [];
   const me = players.find((p) => {
     const riotId = p?.name || p?.game_name || p?.riot_id_name || p?.riotIdName;
     const tag = p?.tag || p?.tag_line || p?.riot_id_tag || p?.riotIdTag;
-    return lower(riotId) === lower(account.name) && lower(tag) === lower(account.tag);
+    return lower(riotId) === lower(who.name) && lower(tag) === lower(who.tag);
   });
   if (!me || !(meta.match_id || meta.id)) return null;
 
@@ -537,6 +564,7 @@ function parseMatch(m) {
   const details = extractDetails(m, played, teamId);
   const weapons = extractWeapons(m, me);
   const server = String(meta.cluster || "").trim();
+  const party = partySize(m?.players, me, teamId);
   const play = extractRounds(m, me, teamId);
   return {
     id: String(meta.match_id ?? meta.id),
@@ -550,6 +578,7 @@ function parseMatch(m) {
     result,
     ...(details ? { details } : {}),
     ...(server ? { server } : {}),
+    ...(party ? { party } : {}),
     ...(weapons ? { weapons } : {}),
     ...(play || {})
   };
@@ -775,6 +804,7 @@ function showTab(name, focus = false) {
     if (on && focus) button.focus();
   });
   store.set(KEY_TAB, name);
+  if (name === "compare") onFriendsTab(); // the Friends tab loads its ranks when it opens
 }
 
 // The phone menu (three bars). On wide screens the same markup is simply the top bar.
@@ -848,6 +878,7 @@ function bindEvents() {
   bindHelp();
   bindChangelog();
   bindInsights();
+  bindFriends();
   $("back-link").addEventListener("click", () => {
     const home = previousAccount;
     setPrevious(null);
@@ -1022,6 +1053,7 @@ function render() {
   renderInsights(view);
   renderBackupNote();
   renderBackLink();
+  renderFriends();
   renderCmpFavorites();
 }
 
@@ -1454,12 +1486,13 @@ function renderMatchDetail() {
   const mine = d.players.find(isMine);
   const myTeam = d.myTeam || (mine && mine.team) || d.players[0].team;
   const otherTeams = [...new Set(d.players.map((p) => p.team))].filter((t) => t !== myTeam);
-  body.replaceChildren(
+  body.replaceChildren(...[
     highlightsEl(d),
+    m.timeline && timelineEl(m.timeline),
     teamEl(d, myTeam, "Your team"),
     ...otherTeams.map((t) => teamEl(d, t, "Opponents")),
-    duelsEl(d)
-  );
+    duelsEl(d),
+  ].filter(Boolean));
   dialog.scrollTop = scroll;
 }
 

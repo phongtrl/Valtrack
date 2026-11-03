@@ -45,7 +45,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
           <button id="tabbtn-matches" class="tab" role="tab" type="button" aria-controls="tab-matches" aria-selected="false" tabindex="-1" data-tab="matches">Matches</button>
           <button id="tabbtn-stats" class="tab" role="tab" type="button" aria-controls="tab-stats" aria-selected="false" tabindex="-1" data-tab="stats">Stats</button>
           <button id="tabbtn-progress" class="tab" role="tab" type="button" aria-controls="tab-progress" aria-selected="false" tabindex="-1" data-tab="progress">Progress</button>
-          <button id="tabbtn-compare" class="tab" role="tab" type="button" aria-controls="tab-compare" aria-selected="false" tabindex="-1" data-tab="compare">Compare</button>
+          <button id="tabbtn-compare" class="tab" role="tab" type="button" aria-controls="tab-compare" aria-selected="false" tabindex="-1" data-tab="compare">Friends</button>
         </nav>
         <div class="actions">
           <div class="account-switcher">
@@ -63,7 +63,10 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
                 <button type="submit">Add and switch</button>
               </form>
               <p id="switch-error" class="error" role="alert"></p>
-              <p class="menu-heading">Help</p>
+              <p class="menu-heading">Alerts</p>
+            <button id="alerts-toggle" class="quiet small" type="button" aria-pressed="false">Match alerts: off</button>
+            <p class="hint">Checks for a finished match every few minutes, only while Valtrack is open.</p>
+            <p class="menu-heading">Help</p>
             <button class="quiet small" type="button" data-open-help>How to use &amp; FAQ</button>
             <p class="menu-heading">Data on this device</p>
               <p id="backup-info" class="hint"></p>
@@ -179,6 +182,16 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <p class="hint">The data centre each match ran on, which is what decides your ping. A "highest win rate" needs at least 5 games on a server, so a lucky few games don't win.</p>
       </section>
       <section class="card pad">
+        <h2>Best agent per map</h2>
+        <div id="agent-maps"></div>
+        <p class="hint">For each map, the agent you play most and the agent with the best win rate. The best win rate needs at least 3 games with that agent on the map.</p>
+      </section>
+      <section class="card pad">
+        <h2>Alone or with friends</h2>
+        <div id="party"></div>
+        <p class="hint">How you do when you queue alone, as a duo, a trio or a bigger stack.</p>
+      </section>
+      <section class="card pad">
         <h2>Weapons</h2>
         <div id="weapons"></div>
         <p class="hint">Rounds are how often you bought the weapon. Kills and deaths come from the kill feed. Damage and headshots count rounds where you bought that weapon, so guns you picked up are only partly included.</p>
@@ -238,6 +251,16 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 
     <!-- Compare: catch up with another player -->
     <div id="tab-compare" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-compare" hidden>
+      <section class="card pad">
+        <h2>Friends</h2>
+        <div class="friends-actions">
+          <button id="friends-refresh" class="quiet small" type="button">Refresh ranks</button>
+          <button id="friends-form" class="quiet small" type="button">Load recent form</button>
+          <span id="friends-status" class="hint"></span>
+        </div>
+        <div id="friends"></div>
+        <p class="hint">You and your favorites, ranked. Add friends with the star. Select a name to open their profile. "Last 10" is the win rate and K/D over their last 10 ranked matches, loaded on request to spare the data source.</p>
+      </section>
       <section>
         <h2>Compare ranks</h2>
         <p class="hint">Roughly how many games it would take to catch up with another player.</p>
@@ -261,6 +284,11 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
     <p>Match data from the unofficial HenrikDev API. Not affiliated with Riot Games.</p>
   </footer>
 </main>
+
+<div id="toast" class="toast" role="status" hidden>
+  <span id="toast-text"></span>
+  <span class="toast-actions"><button id="toast-view" class="quiet small" type="button">View</button><button id="toast-close" class="quiet small" type="button">Dismiss</button></span>
+</div>
 
 <dialog id="changelog" class="sheet" aria-labelledby="changelog-title">
   <div class="sheet-inner">
@@ -292,7 +320,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
         <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, your servers, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, opening duels and trades, clutches and ability use.</li>
         <li><b>Progress:</b> trend charts (hover or tap a dot for details), accuracy over time, rank history, a tilt check and a rank goal estimate.</li>
-        <li><b>Compare:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
+        <li><b>Friends:</b> you and your favorites ranked in one table, and below it a comparison that shows how far you are from another player's rank and roughly how many games it takes to catch up.</li>
         <li>The <b>Game mode</b> selector at the top applies to every tab. It starts on Competitive.</li>
       </ul>
       <p class="note"><b>On a phone,</b> swipe left or right anywhere on the page to change tab.</p>
@@ -306,6 +334,9 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <details><summary>How are the rank goal and catch-up estimates calculated?</summary><p>Valtrack replays the climb 1,500 times. Each game is a win with the win rate shown, worth one of the wins you actually got in your recent ranked games, or a loss worth one of your usual losses. With no history it assumes about 14 to 26 RR per game. You see the median number of games and how many games cover 80% of the runs. It is still an estimate: hidden rating, win streaks and demotion protection are not modelled, and Immortal and Radiant are approximated.</p></details>
         <details><summary>What happens when I open another player's profile?</summary><p>Valtrack loads their matches and rank the same way as yours, and saves them in this browser. Use the "Back to" link above the name, or the Account menu, to return. While you look at them, Compare and Rank goal treat them as the main player.</p></details>
         <details><summary>How are the weapon statistics calculated?</summary><p>Kills and deaths per weapon come from the kill feed of each match. Rounds, damage per round (ADR) and headshot percentage are counted in the rounds where you bought that weapon, so a gun you picked up mid-round is only partly included. Kills per round is the quick measure of impact. Weapon data is saved for matches fetched with this version, so press refresh to load your latest ones.</p></details>
+        <details><summary>How does the Friends tab work?</summary><p>It lists you and your favorites, ranked, and loads each rank from the data source one friend at a time. Ranks are remembered for 10 minutes. "Load recent form" adds the win rate and K/D over each friend's last 10 ranked matches. Your favorites live in your own browser, so each friend adds the others as favorites on their own device.</p></details>
+        <details><summary>How do match alerts work?</summary><p>With match alerts on, Valtrack checks every few minutes whether a new match has finished, and shows a short message with the result. This only works while the page or installed app is open, because a web page cannot check anything once it is closed. Allow notifications in your browser to also get one while the tab is in the background.</p></details>
+        <details><summary>What do the round timeline and the party stats show?</summary><p>The timeline in a match's details shows every round: won or lost, your kills, buy type, side, and who got the first kill. The party stats compare your results when you play alone with duos, trios and larger stacks. Both are saved only for matches fetched with this version.</p></details>
         <details><summary>How are sides, economy and opening duels worked out?</summary><p>Sides come from who planted or defused the spike in each round, since the sides swap after round 12. Buy types come from your team's average loadout value at the start of the round. Opening duels use the first kill of each round, and a trade is a kill on your killer within 5 seconds. Matches where the data is missing are left out. Press refresh to load these for your latest matches.</p></details>
         <details><summary>How are clutches, ability use and the tilt check worked out?</summary><p>A clutch starts when you are the last one alive on your team against at least one enemy, and counts as won if you survive and your team takes the round. Ability use is the number of casts per round for each agent, and the rounds won with little or lots of utility when the data has it per round. The tilt check compares your win rate after a win with your win rate after a loss within the same session, and by game number and time of day, using the matches you have saved. Small samples can mislead.</p></details>
         <details><summary>Why are older matches missing player details?</summary><p>Player details are only saved for matches fetched with the latest version, and the data source only returns recent matches. Press refresh to fill in your latest ones.</p></details>
@@ -336,6 +367,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 
 <script src="changelog.js"></script>
 <script src="insights.js"></script>
+<script src="friends.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

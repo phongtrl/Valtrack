@@ -1,5 +1,11 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.1", title: "Friends, round timeline, match alerts and playing together", items: [
+    "Friends tab: you and your favorites ranked in one table, with recent form on request.",
+    "Round timeline in match details: every round won or lost, your kills, buy type, side and first kills.",
+    "Match alerts: a short message when a new match has finished, while Valtrack is open.",
+    "Best agent per map, and your results when playing alone, as a duo or in a stack.",
+  ] },
   { version: "3.0", title: "New logo and server stats", items: [
     "A new app icon: a V drawn as a progress line, with a dot at each turn.",
     "Servers: which data centres your matches ran on, how often, and the win rate on each. The highest win rate needs at least 5 games on a server.",
