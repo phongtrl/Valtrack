@@ -1221,8 +1221,10 @@ function renderLog(visibleMatches) {
     pager.querySelector('[data-step="-1"]').disabled = logPage === 0;
     pager.querySelector('[data-step="1"]').disabled = logPage >= pages - 1;
   });
+  const mode = $("mode-filter").value;
+  const label = `${visibleMatches.length}${mode === "all" ? "" : " " + mode} ${visibleMatches.length === 1 ? "match" : "matches"}`;
   $("log-count").textContent = matches.length
-    ? `${visibleMatches.length} ${visibleMatches.length === 1 ? "match" : "matches"}${shown.length ? `, showing ${from + 1}–${from + shown.length}` : ""} (${matches.length} saved in total).`
+    ? `${label}${shown.length ? `, showing ${from + 1}–${from + shown.length}` : ""}. ${matches.length} saved on this device in all modes.`
     : "Your saved matches will appear here.";
   shown.forEach((m) => {
     const tr = el("tr");
