@@ -45,7 +45,9 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <span class="hash" aria-hidden="true">#</span>
       <label class="tag">Tag <input id="riot-tag" placeholder="101" maxlength="5" autocomplete="off" spellcheck="false" required></label>
       <button type="submit">Track</button>
+      <label class="consent"><input id="consent" type="checkbox" required> <span>This is my own Riot account, or the player has agreed that I can look up their match data.</span></label>
     </form>
+    <p class="hint consent-note">Valtrack uses the HenrikDev Valorant API. Its rules only allow looking up players who have given their consent. Don't track anyone who hasn't agreed to it.</p>
     <p id="welcome-error" class="error" role="alert"></p>
     <div id="favorites-panel" hidden>
       <p class="muted">Favorites</p>
@@ -82,6 +84,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
                 <button type="submit">Add and switch</button>
               </form>
               <p id="switch-error" class="error" role="alert"></p>
+              <p class="hint">Only add players who have agreed that you can look up their match data.</p>
               <p class="menu-heading">Help</p>
             <button class="quiet small" type="button" data-open-help>How to use &amp; FAQ</button>
             <p class="menu-heading">Data on this device</p>
@@ -287,6 +290,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
           <button id="cmp-go" type="submit">Compare</button>
         </form>
         <p id="cmp-error" class="error" role="alert"></p>
+        <p class="hint">Only compare with players who have agreed that you can look up their match data.</p>
       </section>
       <div id="cmp-result" class="stack" aria-live="polite"></div>
     </div>
@@ -336,6 +340,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <p class="note"><b>On a phone,</b> swipe left or right anywhere on the page to change tab.</p>
       <h3>FAQ</h3>
       <div class="faq">
+        <details open><summary>Do players need to agree to be looked up?</summary><p>Yes. Valtrack gets its data from the HenrikDev Valorant API, which only allows looking up players who have given their consent. Track your own account, and only add, favorite, compare with or open the profile of players who have agreed to it. Services that look up players without consent are not allowed and can be banned from the API.</p></details>
         <details><summary>Which matches does Valtrack load?</summary><p>Your last 50 matches in the current act. Valtrack is made for PC players. The first load can take a little while, because matches arrive 10 at a time and are paced to stay within the data source's limit. After that only new matches are fetched. Valtrack keeps every match it has fetched, so older acts stay too. Use Export under Account now and then as a backup.</p></details>
         <details><summary>Why does the refresh button sometimes not fetch anything?</summary><p>To stay within the data source's limits, fetches are spaced out: automatic refreshes wait 10 minutes and the button waits one minute. The icon still spins briefly, and the status line tells you when you last fetched. Rank and RR history are only asked for again after a new ranked match, or once a day. If the data source asks us to slow down, the app pauses for a moment.</p></details>
         <details><summary>How does the Friends tab work?</summary><p>It lists you and everyone you have favorited with the star. Nothing loads by itself: tap the wheel next to a friend to load just that friend. That costs up to two requests (rank and their last 10 ranked matches, plus one the first time to find their region). What you load is saved, shown the next time without any request, and a second tap within 10 minutes reuses it. Your own win rate and K/D use the matches you already have saved.</p></details>
@@ -369,6 +374,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
   <form method="dialog">
     <h2 id="storage-title">Saved on this device</h2>
     <p>Your favorites, tracked accounts and match history are saved in this browser, on this device only. They won't appear on other devices, and clearing your browser data will remove them. Use Export to keep a backup.</p>
+    <p><b>Consent:</b> only look up players who have agreed to it. This is a rule of the HenrikDev API that Valtrack uses.</p>
     <button type="submit">OK</button>
   </form>
 </dialog>

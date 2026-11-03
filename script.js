@@ -1820,9 +1820,9 @@ function setupStorageNotice() {
   const dialog = $("storage-notice");
   if (!dialog || typeof dialog.show !== "function") return;
   $("storage-link").addEventListener("click", () => dialog.show()); // a small card that leaves the page usable
-  if (store.get("vt:notice-seen")) return;
+  if (store.get("vt:notice-seen") === "2") return; // "2" = seen since the consent rule was added
   dialog.show();
-  dialog.addEventListener("close", () => store.set("vt:notice-seen", "1"), { once: true });
+  dialog.addEventListener("close", () => store.set("vt:notice-seen", "2"), { once: true });
 }
 
 setupStorageNotice();

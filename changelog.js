@@ -1,5 +1,9 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.7", title: "Consent", items: [
+    "Valtrack's data source, the HenrikDev API, only allows looking up players who have agreed to it. You now confirm this when you start, and reminders sit next to every place you can look up another player.",
+    "A new FAQ entry explains the rule.",
+  ] },
   { version: "3.6", title: "Gentler on the data limit", items: [
     "Loading an act now stops after your last 50 matches, so it no longer runs out the data source's limit.",
     "Valtrack is made for PC players, so console matches are no longer requested. Fewer requests, and no more server errors from accounts without console history.",
