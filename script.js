@@ -718,7 +718,7 @@ async function syncMatches(manual = true) {
       setStatus("The API responded, but returned no matches for this Riot ID. Check the region and whether match history is available.", true);
       return;
     }
-    const parsed = rows.map(parseMatch).filter(Boolean);
+    const parsed = rows.map((m) => parseMatch(m)).filter(Boolean);
     if (!parsed.length) {
       const shape = Object.keys(rows[0] || {}).join(", ") || "empty object";
       throw new Error(`HenrikDev returned ${rows.length} match(es), but this app couldn't map the response fields (top-level fields: ${shape}). The API response schema may have changed.`);
