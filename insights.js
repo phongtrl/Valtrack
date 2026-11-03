@@ -29,8 +29,8 @@ function mergeRr(entries) {
   store.set(rrKey(), JSON.stringify(rrHistory));
 }
 
-async function fetchRrHistory(force = false) {
-  if (!force && rrHistory.length && isFresh("rr")) return; // fetched recently: use what is saved
+async function fetchRrHistory(force = false, maxAge = FRESH_MS) {
+  if (!force && rrHistory.length && Date.now() - lastFetched("rr") < maxAge) return; // fetched recently: use what is saved
   try {
     const json = await api(`/valorant/v2/mmr-history/${encodeURIComponent(account.region)}/pc/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}`);
     const list = json?.data?.history ?? json?.history ?? (Array.isArray(json?.data) ? json.data : []);

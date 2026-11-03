@@ -1,5 +1,12 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.1", title: "Round timeline and fewer requests", items: [
+    "Round-by-round timeline in each match: who won every round, how it ended, how both teams bought, the spike plants and defuses, and every kill in order.",
+    "Older matches without rounds or player details can be loaded on their own with one request.",
+    "Rank and RR history are only fetched again after a new ranked match (or once a day), so a refresh with nothing new uses one request instead of three.",
+    "Your saved rank shows straight away when you open the app.",
+    "The logo is now next to the title and on the loading screen.",
+  ] },
   { version: "3.0", title: "New logo and server stats", items: [
     "A new app icon: a V drawn as a progress line, with a dot at each turn.",
     "Servers: which data centres your matches ran on, how often, and the win rate on each. The highest win rate needs at least 5 games on a server.",

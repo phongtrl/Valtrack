@@ -18,7 +18,7 @@ const MIN = 60e3;
 const DAY = 864e5;
 const FRESH_MS = 10 * MIN;    // automatic refreshes leave the API alone for this long
 const COOLDOWN_MS = MIN;      // the Fetch latest button waits this long between calls
-const KEEP_DETAILS = 150;     // if browser storage fills up, only the newest matches keep full player details
+const KEEP_DETAILS = 150;     // if browser storage fills up, only the newest matches keep player details and rounds
 const RING = 2 * Math.PI * 70;
 
 let account = null; // { name, tag, region }
@@ -84,17 +84,16 @@ function fetchedTimes() {
   try { return JSON.parse(store.get(fetchedKey()) || "{}") || {}; } catch (e) { return {}; }
 }
 const lastFetched = (kind) => Number(fetchedTimes()[kind]) || 0;
-const isFresh = (kind) => Date.now() - lastFetched(kind) < FRESH_MS;
 const markFetched = (kind) => store.set(fetchedKey(), JSON.stringify({ ...fetchedTimes(), [kind]: Date.now() }));
 
 const matchKey = () => KEY_MATCHES + lower(account.name) + "#" + lower(account.tag);
 
 function saveMatches() {
   if (store.set(matchKey(), JSON.stringify(matches))) return;
-  // Storage is full: keep every match, but drop the heavy player details from the oldest ones.
+  // Storage is full: keep every match, but drop the heavy player details and rounds from the oldest ones.
   const slim = sortMatches(matches).map((m, i) => {
-    if (i < KEEP_DETAILS || !m.details) return m;
-    const { details, ...rest } = m;
+    if (i < KEEP_DETAILS || !(m.details || m.timeline)) return m;
+    const { details, timeline, ...rest } = m;
     return rest;
   });
   if (store.set(matchKey(), JSON.stringify(slim))) {
@@ -179,6 +178,7 @@ function openAccount(acc, autoFetch) {
   updateFavoriteButton();
   renderFavorites();
   render();
+  if (account.region) fetchRankStats(false, Infinity); // show the saved rank right away; the API is only asked if none is saved
   if (autoFetch) syncMatches(false);
 }
 
@@ -257,9 +257,41 @@ async function lookupRegion(name = account.name, tag = account.tag) {
   }
 }
 
+const playerKey = (p) => String(p?.puuid || `${lower(p?.name)}#${lower(p?.tag)}`);
+const roundId = (r, i) => (Number.isFinite(r?.id) ? r.id : i);
+const buyKind = (id, avg) => (id === 0 || id === 12 ? "pistol" : avg < 1800 ? "eco" : avg < 3300 ? "force" : "full");
+
+function endType(text) {
+  const t = lower(text);
+  return t.includes("defus") ? "defuse" : t.includes("detonat") ? "bomb" : t.includes("elimin") ? "elim" : t.includes("surrender") ? "ff" : t ? "time" : "";
+}
+
+// Attackers plant the spike and defenders defuse it, which shows the sides in those rounds. The sides swap after round 12.
+// Returns a function that gives "A" or "D" for my team in a round, or null when unknown.
+function sideFinder(rounds, other, myTeam) {
+  const evidence = new Map();
+  const votes = new Map();
+  rounds.forEach((r, i) => {
+    const id = roundId(r, i);
+    const planter = String(r?.plant?.player?.team ?? "");
+    const defuser = String(r?.defuse?.player?.team ?? "");
+    const attackers = planter || (defuser ? other(defuser) : "");
+    if (!attackers) return;
+    evidence.set(id, attackers);
+    const firstHalf = id < 12 ? attackers : id < 24 ? other(attackers) : null;
+    if (firstHalf) votes.set(firstHalf, (votes.get(firstHalf) || 0) + 1);
+  });
+  let first = null;
+  votes.forEach((n, team) => { if (!first || n > votes.get(first)) first = team; });
+  return (id) => {
+    const attackers = id >= 24 ? evidence.get(id) : first ? (id < 12 ? first : other(first)) : null;
+    return attackers ? (attackers === myTeam ? "A" : "D") : null;
+  };
+}
+
 function extractDetails(m, played, teamId) {
   const list = Array.isArray(m?.players) ? m.players : [];
-  const idOf = (p) => String(p?.puuid || `${lower(p?.name)}#${lower(p?.tag)}`);
+  const idOf = playerKey;
   const players = list.map((p) => {
     const s = p?.stats || {};
     const head = Number(s.headshots) || 0;
@@ -356,29 +388,10 @@ function extractRounds(m, me, teamId) {
   const teamOf = new Map(players.map((p) => [puuidOf(p), String(p?.team_id ?? "")]));
   const teamIds = [...new Set(teamOf.values())].filter(Boolean);
   const other = (t) => teamIds.find((x) => x !== t);
-  const rid = (r, i) => (Number.isFinite(r?.id) ? r.id : i);
+  const rid = roundId;
   const won = (r) => String(r?.winning_team ?? "") === myTeam;
   const kills = Array.isArray(m?.kills) ? m.kills : [];
-
-  // Attackers plant the spike and defenders defuse it, which shows the sides in those rounds. The sides swap after round 12.
-  const evidence = new Map();
-  const votes = new Map();
-  rounds.forEach((r, i) => {
-    const id = rid(r, i);
-    const planter = String(r?.plant?.player?.team ?? "");
-    const defuser = String(r?.defuse?.player?.team ?? "");
-    const attackers = planter || (defuser ? other(defuser) : "");
-    if (!attackers) return;
-    evidence.set(id, attackers);
-    const firstHalf = id < 12 ? attackers : id < 24 ? other(attackers) : null;
-    if (firstHalf) votes.set(firstHalf, (votes.get(firstHalf) || 0) + 1);
-  });
-  let first = null;
-  votes.forEach((n, team) => { if (!first || n > votes.get(first)) first = team; });
-  const sideOf = (id) => {
-    const attackers = id >= 24 ? evidence.get(id) : first ? (id < 12 ? first : other(first)) : null;
-    return attackers ? (attackers === myTeam ? "A" : "D") : null;
-  };
+  const sideOf = sideFinder(rounds, other, myTeam);
 
   const sides = { A: [0, 0, 0, 0], D: [0, 0, 0, 0] };
   let sideKnown = false;
@@ -406,7 +419,7 @@ function extractRounds(m, me, teamId) {
       .filter(Number.isFinite);
     if (!values.length) return;
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    const kind = id === 0 || id === 12 ? "pistol" : avg < 1800 ? "eco" : avg < 3300 ? "force" : "full";
+    const kind = buyKind(id, avg);
     econ[kind][0]++;
     if (won(r)) econ[kind][1]++;
     econ.v[0] += avg;
@@ -495,6 +508,46 @@ function extractRounds(m, me, teamId) {
   return Object.keys(out).length ? out : null;
 }
 
+// Every round: w = my team won, e = how it ended, s = my side, b = [my team's, opponents'] average loadout,
+// p = [planter, time, site], d = [defuser, time], k = [[killer, victim, time]]. Players are indexes into details.players, -1 when unknown; times are seconds.
+function extractTimeline(m, teamId, details) {
+  if (!details) return null;
+  const rounds = Array.isArray(m?.rounds) ? m.rounds : [];
+  const myTeam = String(teamId ?? "");
+  const index = new Map(details.players.map((p, i) => [p.key, i]));
+  const who = (p) => (p ? index.get(playerKey(p)) ?? -1 : -1);
+  const teamOf = (p) => String(p?.team ?? details.players[who(p)]?.team ?? "");
+  const teamIds = [...new Set(details.players.map((p) => p.team))].filter(Boolean);
+  const other = (t) => teamIds.find((x) => x !== t);
+  const sideOf = sideFinder(rounds, other, myTeam);
+  const secs = (ms) => Math.round((Number(ms) || 0) / 1000);
+  const kills = new Map();
+  (Array.isArray(m?.kills) ? m.kills : []).forEach((k) => {
+    const victim = who(k?.victim);
+    if (victim < 0) return;
+    if (!kills.has(k.round)) kills.set(k.round, []);
+    kills.get(k.round).push([who(k?.killer), victim, secs(k.time_in_round_in_ms)]);
+  });
+  return rounds.map((r, i) => {
+    const id = roundId(r, i);
+    const out = { w: String(r?.winning_team ?? "") === myTeam ? 1 : 0, e: endType(r?.result ?? r?.end_type) };
+    const side = sideOf(id);
+    if (side) out.s = side;
+    const stats = r?.stats ?? r?.player_stats ?? [];
+    const avg = (team) => {
+      const v = stats.filter((s) => teamOf(s?.player) === team).map((s) => Number(s?.economy?.loadout_value)).filter(Number.isFinite);
+      return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+    };
+    const buys = [avg(myTeam), avg(other(myTeam))];
+    if (buys.some((v) => v !== null)) out.b = buys;
+    if (r?.plant) out.p = [who(r.plant.player), secs(r.plant.round_time_in_ms), String(r.plant.site || "")];
+    if (r?.defuse) out.d = [who(r.defuse.player), secs(r.defuse.round_time_in_ms)];
+    const list = (kills.get(id) || []).sort((a, b) => a[2] - b[2]);
+    if (list.length) out.k = list;
+    return out;
+  });
+}
+
 function parseMatch(m) {
   const meta = m?.metadata || m?.meta || {};
   const players = Array.isArray(m?.players) ? m.players : [];
@@ -549,6 +602,7 @@ function parseMatch(m) {
   const weapons = extractWeapons(m, me);
   const server = String(meta.cluster || "").trim();
   const play = extractRounds(m, me, teamId);
+  const timeline = extractTimeline(m, teamId, details);
   return {
     id: String(meta.match_id ?? meta.id),
     date: Number.isFinite(startedMs) ? new Date(startedMs).toISOString().slice(0, 10) : (String(started || "").slice(0, 10) || today()),
@@ -562,20 +616,21 @@ function parseMatch(m) {
     ...(details ? { details } : {}),
     ...(server ? { server } : {}),
     ...(weapons ? { weapons } : {}),
+    ...(timeline ? { timeline } : {}),
     ...(play || {})
   };
 }
 
 
-async function fetchMmr(name, tag, region, force = false) {
-  return cached(`mmr:${lower(name)}#${lower(tag)}`, force ? 0 : FRESH_MS, async () => {
+async function fetchMmr(name, tag, region, force = false, maxAge = FRESH_MS) {
+  return cached(`mmr:${lower(name)}#${lower(tag)}`, force ? 0 : maxAge, async () => {
     const json = await api(`/valorant/v3/mmr/${encodeURIComponent(region)}/pc/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`);
     const data = (json && json.data) || {};
     return { current: data.current, peak: data.peak }; // only what the app uses, to keep the saved copy small
   });
 }
 
-async function fetchRankStats(force = false) {
+async function fetchRankStats(force = false, maxAge = FRESH_MS) {
   const currentNode = $("rank-current");
   const peakNode = $("rank-peak");
   const rrNode = $("rank-rr");
@@ -587,7 +642,7 @@ async function fetchRankStats(force = false) {
   $("rank-peak-season").textContent = "All-time peak reported by API";
   $("rank-rr-note").textContent = "Ranked rating";
   try {
-    const data = await fetchMmr(account.name, account.tag, account.region, force);
+    const data = await fetchMmr(account.name, account.tag, account.region, force, maxAge);
     const current = data.current || {};
     const peak = data.peak || {};
     const currentTier = current.tier?.name || current.tier?.name_short || "Unranked / unavailable";
@@ -647,14 +702,12 @@ async function syncMatches(manual = true) {
   button.setAttribute("aria-busy", "true");
   setStatus("Fetching recent matches from HenrikDev…");
   $("app").classList.toggle("loading", !matches.length);
+  let newRanked = false;
   try {
     if (!account.region) {
       account.region = await lookupRegion();
       store.set(KEY_ACCOUNT, JSON.stringify(account));
     }
-    // Rank is fetched independently so an MMR endpoint issue doesn't block match history.
-    await fetchRankStats(manual);
-    await fetchRrHistory(manual);
     const path = `/valorant/v4/matches/${encodeURIComponent(account.region)}/pc/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}?size=${age < 6 * 60 * MIN ? 10 : 20}`;
     const json = await api(path);
     const rows = Array.isArray(json.data) ? json.data : [];
@@ -670,17 +723,28 @@ async function syncMatches(manual = true) {
     const existing = new Map(matches.map(m => [String(m.id), m]));
     let added = 0;
     parsed.forEach(m => {
-      if (!existing.has(String(m.id))) added++;
+      if (!existing.has(String(m.id))) {
+        added++;
+        if (/compet/i.test(m.mode)) newRanked = true;
+      }
       existing.set(String(m.id), m);
     });
     matches = sortMatches([...existing.values()]);
     markFetched("matches");
     saveMatches();
     render();
-    setStatus(`Fetched ${parsed.length} match(es); added ${added} new. ${matches.length} total saved.`);
+    setStatus(added
+      ? `Fetched ${parsed.length} match(es); added ${added} new. ${matches.length} total saved.`
+      : `No new matches since the last fetch. ${matches.length} total saved.`);
   } catch (e) {
     setStatus(e.message || "Fetch failed. Check your API key and Riot ID.", true);
   } finally {
+    // Rank and RR only change after a ranked match, so the saved copies are reused (up to a day) unless one was just added.
+    if (account.region) {
+      await fetchRankStats(newRanked, DAY);
+      await fetchRrHistory(newRanked, DAY);
+      if (newRanked) render();
+    }
     syncing = false;
     $("app").classList.remove("loading");
     button.disabled = false;
@@ -1319,6 +1383,7 @@ $("cmp-form").addEventListener("submit", (e) => {
 
 let detailMatch = null;
 let detailPick = 0;
+let detailRound = 0;
 const kdOf = (p) => (p.deaths ? p.kills / p.deaths : p.kills);
 const isMine = (p) => !!account && lower(p.name) === lower(account.name) && lower(p.tag) === lower(account.tag);
 
@@ -1327,6 +1392,7 @@ function openMatch(id) {
   if (!m) return;
   detailMatch = m;
   detailPick = m.details ? Math.max(0, m.details.players.findIndex(isMine)) : 0;
+  detailRound = 0;
   renderMatchDetail();
   const dialog = $("match-detail");
   if (!dialog.open) dialog.showModal();
@@ -1448,18 +1514,13 @@ function renderMatchDetail() {
   const m = detailMatch;
   const dialog = $("match-detail");
   const scroll = dialog.scrollTop;
+  const stripScroll = dialog.querySelector(".tl-strip")?.scrollLeft || 0;
   $("md-title").textContent = `${m.map} · ${m.mode}`;
   $("md-sub").textContent = `${m.date} · ${m.result[0].toUpperCase() + m.result.slice(1)} ${m.roundsWon} – ${m.roundsLost}`;
   const body = $("md-body");
   const d = m.details;
   if (!d) {
-    const fetchAgain = el("button", "", "Fetch latest");
-    fetchAgain.type = "button";
-    fetchAgain.addEventListener("click", () => { dialog.close(); syncMatches(); });
-    body.replaceChildren(
-      el("p", "", "Player details aren't saved for this match yet. Press Fetch latest to load them. The API only returns your most recent matches, so older ones can't be filled in."),
-      fetchAgain
-    );
+    body.replaceChildren(loadMatchEl(m, "Player details and rounds aren't saved for this match yet.", "Load match details"));
     return;
   }
   const mine = d.players.find(isMine);
@@ -1469,9 +1530,153 @@ function renderMatchDetail() {
     highlightsEl(d),
     teamEl(d, myTeam, "Your team"),
     ...otherTeams.map((t) => teamEl(d, t, "Opponents")),
+    timelineEl(m, myTeam),
     duelsEl(d)
   );
+  const strip = body.querySelector(".tl-strip");
+  if (strip) strip.scrollLeft = stripScroll;
   dialog.scrollTop = scroll;
+}
+
+/* ---------- Round timeline ---------- */
+
+const BUY_NAMES = { pistol: "Pistol", eco: "Eco", force: "Force buy", full: "Full buy" };
+const BUY_MARKS = { pistol: "P", eco: "$", force: "$$", full: "$$$" };
+const END_NAMES = { elim: "Elimination", bomb: "Spike detonated", defuse: "Spike defused", time: "Time ran out", ff: "Surrender" };
+const END_ICONS = {
+  elim: '<path d="M7 7l10 10M17 7L7 17"/>',
+  bomb: '<path d="M12 3l4.5 9L12 21l-4.5-9z"/>',
+  defuse: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  time: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/>',
+  ff: '<path d="M6 21V4h11l-2 4 2 4H6"/>',
+};
+const endIcon = (e) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${END_ICONS[e] || ""}</svg>`;
+const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+// One request for a single match, to fill in player details or rounds that were not saved before.
+async function loadFullMatch(id) {
+  const owner = matchKey();
+  if (!account.region) {
+    account.region = await lookupRegion();
+    store.set(KEY_ACCOUNT, JSON.stringify(account));
+  }
+  const json = await api(`/valorant/v4/match/${encodeURIComponent(account.region)}/${encodeURIComponent(id)}`);
+  const parsed = parseMatch(json?.data);
+  if (!parsed) throw new Error("HenrikDev couldn't return this match. Try again later.");
+  if (matchKey() !== owner) return; // the account changed while loading
+  if (!parsed.timeline) parsed.timeline = []; // remembered as empty, so it isn't requested again
+  matches = sortMatches(matches.map((x) => (String(x.id) === String(id) ? parsed : x)));
+  saveMatches();
+  render();
+  if (detailMatch && String(detailMatch.id) === String(id)) {
+    detailMatch = parsed;
+    renderMatchDetail();
+  }
+}
+
+function loadMatchEl(m, text, label) {
+  const box = el("div", "tl-load");
+  const note = el("p", "hint", `${text} Loading it uses one request to HenrikDev.`);
+  const button = el("button", "quiet small", label);
+  button.type = "button";
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    button.textContent = "Loading…";
+    try {
+      await loadFullMatch(m.id);
+    } catch (e) {
+      note.className = "error";
+      note.textContent = e.message || "Could not load this match.";
+      button.disabled = false;
+      button.textContent = "Try again";
+    }
+  });
+  box.append(note, button);
+  return box;
+}
+
+function timelineEl(m, myTeam) {
+  const box = el("section", "timeline");
+  box.append(el("h3", "", "Rounds"));
+  const rounds = m.timeline;
+  if (!rounds) {
+    box.append(loadMatchEl(m, "The round timeline isn't saved for this match yet.", "Load rounds"));
+    return box;
+  }
+  if (!rounds.length) {
+    box.append(el("p", "empty", "The API didn't return round data for this match."));
+    return box;
+  }
+  box.append(el("p", "hint", "Who won each round, how it ended and how your team bought. A dot marks a spike plant. Select a round to see the kills."));
+  const strip = el("div", "tl-strip");
+  strip.setAttribute("role", "group");
+  strip.setAttribute("aria-label", "Rounds");
+  const detail = el("div", "tl-detail");
+  detail.setAttribute("aria-live", "polite");
+  const buttons = rounds.map((r, i) => {
+    const kind = r.b && Number.isFinite(r.b[0]) ? buyKind(i, r.b[0]) : null;
+    const b = el("button", `tl-round ${r.w ? "won" : "lost"}${r.p ? " planted" : ""}${i === 12 || i === 24 ? " tl-half" : ""}`);
+    b.type = "button";
+    b.innerHTML = `<b>${i + 1}</b>${endIcon(r.e)}<small>${kind ? BUY_MARKS[kind] : ""}</small>`;
+    b.setAttribute("aria-label", [`Round ${i + 1}: ${r.w ? "won" : "lost"}`, END_NAMES[r.e], kind && BUY_NAMES[kind], r.p && "spike planted"].filter(Boolean).join(", "));
+    b.addEventListener("click", () => select(i));
+    return b;
+  });
+  const select = (i) => {
+    detailRound = i;
+    buttons.forEach((b, j) => b.setAttribute("aria-pressed", String(j === i)));
+    detail.replaceChildren(...roundDetailEls(m, i, myTeam));
+  };
+  strip.append(...buttons);
+  const legend = el("div", "tl-legend");
+  legend.innerHTML = Object.keys(END_NAMES).map((e) => `<span>${endIcon(e)}${END_NAMES[e]}</span>`).join("") +
+    `<span>P pistol · $ eco · $$ force · $$$ full buy</span><span><i class="tl-dot"></i>Spike planted</span>`;
+  box.append(strip, legend, detail);
+  select(Math.min(detailRound, rounds.length - 1));
+  return box;
+}
+
+function roundDetailEls(m, i, myTeam) {
+  const r = m.timeline[i];
+  const players = m.details.players;
+  const ally = (idx) => !!players[idx] && players[idx].team === myTeam;
+  const who = (idx) => {
+    const p = players[idx];
+    const span = el("span", "tl-who");
+    if (!p) { span.textContent = "Unknown"; return span; }
+    span.append(el("b", ally(idx) ? "r-win" : "r-loss", p.name + (isMine(p) ? " (you)" : "")), el("small", "", p.agent));
+    return span;
+  };
+
+  const head = el("div", "tl-head");
+  const side = r.s === "A" ? "Attack" : r.s === "D" ? "Defence" : "";
+  head.append(el("strong", r.w ? "r-win" : "r-loss", `Round ${i + 1} · ${r.w ? "Won" : "Lost"}`), el("span", "muted", [END_NAMES[r.e], side].filter(Boolean).join(" · ")));
+
+  const chips = el("div", "md-chips tl-buys");
+  if (r.b) [["Your team", r.b[0]], ["Opponents", r.b[1]]].forEach(([label, v]) => {
+    if (Number.isFinite(v)) chips.append(el("span", "md-chip", `${label}: ${BUY_NAMES[buyKind(i, v)]} · ${v.toLocaleString()} average loadout`));
+  });
+  const kills = r.k || [];
+  const ours = kills.filter(([k, v]) => ally(k) && !ally(v)).length;
+  const theirs = kills.filter(([k, v]) => k >= 0 && !ally(k) && ally(v)).length;
+  if (kills.length) chips.append(el("span", "md-chip", `Kills ${ours} – ${theirs}`));
+
+  const events = kills.map(([k, v, t]) => ({ t, k, v }));
+  if (r.p) events.push({ t: r.p[1], spike: r.p[0], text: ` planted the spike${r.p[2] ? " on " + r.p[2] : ""}` });
+  if (r.d) events.push({ t: r.d[1], spike: r.d[0], text: " defused the spike" });
+  events.sort((a, b) => a.t - b.t);
+  const feed = el("ol", "tl-feed");
+  events.forEach((e) => {
+    const li = el("li", e.text ? "spike" : "");
+    li.append(el("span", "tl-time", clock(e.t)));
+    const line = el("span", "tl-line");
+    if (e.text) line.append(who(e.spike), document.createTextNode(e.text));
+    else if (e.k < 0 || e.k === e.v) line.append(who(e.v), document.createTextNode(" died"));
+    else line.append(who(e.k), document.createTextNode(" killed "), who(e.v));
+    li.append(line);
+    feed.append(li);
+  });
+  return [head, chips, events.length ? feed : el("p", "empty", "No kills recorded for this round.")];
 }
 
 function bindChangelog() {
