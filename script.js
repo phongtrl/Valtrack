@@ -156,11 +156,13 @@ function init() {
 function hideSplash() {
   const splash = $("splash");
   if (!splash) return;
-  // let the logo finish drawing before fading out
+  // Phones often paint late, so count from when the logo animation really started, not from page load.
+  const anim = splash.querySelector(".splash-line")?.getAnimations?.()[0];
+  const elapsed = anim ? (anim.startTime === null ? 0 : document.timeline.currentTime - anim.startTime) : performance.now();
   setTimeout(() => {
     splash.classList.add("is-done");
     setTimeout(() => splash.remove(), 500);
-  }, Math.max(0, 1100 - performance.now()));
+  }, Math.max(0, 1100 - elapsed));
 }
 
 function showWelcome() {

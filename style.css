@@ -501,5 +501,11 @@ dialog p { margin-bottom: 18px; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
   .tool.is-loading .refresh { animation: spin 1.6s linear infinite !important; } /* a loading spinner is feedback, so it stays, only slower */
+  /* the logo draws in place without moving across the screen, so it stays too, without the pulse */
+  .splash-line { animation: splash-draw .7s cubic-bezier(.6, 0, .3, 1) both !important; }
+  .splash-node { animation: splash-pop .3s ease-out .35s both !important; }
+  .splash-node + .splash-node { animation-delay: .5s !important; }
+  .splash-peak { animation: splash-pop .35s ease-out .65s both !important; }
+  .splash { transition: opacity .3s ease, visibility .3s !important; }
 }
 #cmp-result.stack { --gap: 14px; }
