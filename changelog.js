@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.8", title: "Refresh rank only", items: [
+    "A Refresh rank button in Overview updates your current rank, peak rank and RR without loading your matches again.",
+  ] },
   { version: "3.7", title: "Consent", items: [
     "Valtrack's data source, the HenrikDev API, only allows looking up players who have agreed to it. You now confirm this when you start, and reminders sit next to every place you can look up another player.",
     "A new FAQ entry explains the rule.",

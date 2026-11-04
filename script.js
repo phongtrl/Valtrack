@@ -731,6 +731,30 @@ function spinBriefly(ms = 700) {
   setTimeout(() => { if (!syncing) button.classList.remove("is-loading"); }, ms);
 }
 
+// One mmr request instead of a full match sync.
+async function refreshRank() {
+  const button = $("rank-refresh");
+  if (syncing || button.disabled || !account.region) return;
+  const age = Date.now() - lastFetched("rank");
+  if (age < COOLDOWN_MS) {
+    button.classList.add("is-loading");
+    setTimeout(() => button.classList.remove("is-loading"), 700);
+    setStatus(`Rank is up to date. Last fetched ${ago(age)}. You can refresh it again in a minute.`);
+    return;
+  }
+  button.disabled = true;
+  button.classList.add("is-loading");
+  button.setAttribute("aria-busy", "true");
+  setStatus("Fetching your rank from HenrikDev…");
+  await fetchRankStats(true);
+  markFetched("rank");
+  const failed = $("rank-current").textContent === "Unavailable";
+  setStatus(failed ? "Could not load your rank." : "Current rank, peak rank and RR updated.", failed);
+  button.disabled = false;
+  button.classList.remove("is-loading");
+  button.setAttribute("aria-busy", "false");
+}
+
 async function syncMatches(manual = true) {
   if (syncing) return;
   const age = Date.now() - lastFetched("matches");
@@ -1026,6 +1050,7 @@ function bindEvents() {
 
   $("favorite-current").addEventListener("click", toggleCurrentFavorite);
   $("sync").addEventListener("click", () => syncMatches(true));
+  $("rank-refresh").addEventListener("click", refreshRank);
   $("mode-filter").addEventListener("change", () => { modeChosen = true; logPage = 0; render(); });
 
   $("export").addEventListener("click", exportData);

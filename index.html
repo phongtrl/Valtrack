@@ -147,11 +147,20 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         </div>
       </div>
 
+      <section>
+      <div class="section-head rank-head">
+        <h2>Competitive rank</h2>
+        <button id="rank-refresh" class="tool rank-refresh" type="button" title="Refresh current rank, peak rank and RR without fetching matches">
+          <svg class="icon refresh" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20.5 4v4.5H16"/></svg>
+          Refresh rank
+        </button>
+      </div>
       <div id="rank-panel" class="rank-panel" aria-label="Competitive rank">
         <article class="rank-card card"><span class="rank-icon" id="rank-current-icon"></span><div><span class="label">Current rank</span><strong id="rank-current">Loading…</strong><small id="rank-current-season">Competitive</small></div></article>
         <article class="rank-card card"><span class="rank-icon" id="rank-peak-icon"></span><div><span class="label">Peak rank</span><strong id="rank-peak">—</strong><small id="rank-peak-season">All-time peak reported by API</small></div></article>
         <article class="rank-card card"><div><span class="label">Current RR</span><strong id="rank-rr">—</strong><small id="rank-rr-note">Ranked rating</small></div></article>
       </div>
+      </section>
 
       <div class="two">
         <section class="card pad"><h2>Today</h2><div id="session-body"></div></section>
@@ -324,7 +333,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <h3>Getting started</h3>
       <ol>
         <li>Enter your username and tag, for example <b>lev0nt</b> and <b>101</b>, and press Track.</li>
-        <li>Press the refresh icon to load your recent matches, rank and rank history. The app also refreshes by itself when you open it, at most every 10 minutes.</li>
+        <li>Press the refresh icon to load your recent matches, rank and rank history. The app also refreshes by itself when you open it, at most every 10 minutes. To update only your current rank, peak rank and RR, press Refresh rank in Overview.</li>
         <li>Tap the star to save a player as a favorite. Favorites let you switch profile quickly under Account, and you can compare ranks with them in one tap.</li>
         <li>Use the moon or sun icon to switch between light and dark mode.</li>
       </ol>
