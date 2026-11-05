@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "3.9", title: "Manual refresh only", items: [
+    "Valtrack no longer fetches new matches by itself when you open the app, switch profiles or come back to the tab. Press Fetch latest when you want an update.",
+  ] },
   { version: "3.8", title: "Refresh rank only", items: [
     "A Refresh rank button in Overview updates your current rank, peak rank and RR without loading your matches again.",
   ] },

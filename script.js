@@ -148,7 +148,7 @@ function init() {
   let saved = null;
   try { saved = JSON.parse(store.get(KEY_ACCOUNT)); } catch (e) { /* none */ }
   try { previousAccount = JSON.parse(store.get(KEY_PREVIOUS)); } catch (e) { previousAccount = null; }
-  if (saved && saved.name && saved.tag) openAccount(saved, true);
+  if (saved && saved.name && saved.tag) openAccount(saved);
   else showWelcome();
   hideSplash();
 }
@@ -172,7 +172,7 @@ function showWelcome() {
   $("riot-name").focus();
 }
 
-function openAccount(acc, autoFetch) {
+function openAccount(acc) {
   account = acc;
   store.set(KEY_ACCOUNT, JSON.stringify(account));
   matches = loadMatches();
@@ -182,12 +182,11 @@ function openAccount(acc, autoFetch) {
   $("welcome").hidden = true;
   $("app").hidden = false;
   $("who").replaceChildren(document.createTextNode(account.name), el("small", "", "#" + account.tag));
-  setStatus("");
+  setStatus(matches.length ? "" : "No matches saved yet. Press Fetch latest to load them.");
   updateFavoriteButton();
   renderFavorites();
   render();
   if (account.region) fetchRankStats(false, Infinity); // show the saved rank right away; the API is only asked if none is saved
-  if (autoFetch) syncMatches(false);
 }
 
 function setStatus(message, isError = false) {
@@ -865,7 +864,7 @@ function renderFavorites() {
     favorites.forEach(f => {
       const button = el("button", "chip", `★ ${f.name}#${f.tag}`);
       button.type = "button";
-      button.addEventListener("click", () => openAccount({ ...f }, true));
+      button.addEventListener("click", () => openAccount({ ...f }));
       welcomeList.append(button);
     });
   }
@@ -881,7 +880,7 @@ function renderFavorites() {
       if (current) button.append(el("small", "", "CURRENT"));
       button.addEventListener("click", () => {
         closeAccountMenu();
-        openAccount({ ...f }, true);
+        openAccount({ ...f });
       });
       switchList.append(button);
     });
@@ -996,7 +995,7 @@ function bindEvents() {
   $("back-link").addEventListener("click", () => {
     const home = previousAccount;
     setPrevious(null);
-    openAccount({ ...home }, true);
+    openAccount({ ...home });
   });
   document.querySelector(".brand").addEventListener("click", (e) => {
     if ($("back-link").hidden) return;
@@ -1018,7 +1017,7 @@ function bindEvents() {
       return;
     }
     $("welcome-error").textContent = "";
-    openAccount(acc, true);
+    openAccount(acc);
   });
 
   $("change").addEventListener("click", () => {
@@ -1045,7 +1044,7 @@ function bindEvents() {
     $("switch-riot-name").value = "";
     $("switch-riot-tag").value = "";
     closeAccountMenu();
-    openAccount(next, true);
+    openAccount(next);
   });
 
   $("favorite-current").addEventListener("click", toggleCurrentFavorite);
@@ -1058,10 +1057,6 @@ function bindEvents() {
   $("backup-later").addEventListener("click", () => {
     store.set(KEY_SNOOZE, String(Date.now() + 7 * DAY));
     renderBackupNote();
-  });
-  // Coming back to the app after a while refreshes it, but never more often than FRESH_MS.
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && account && !$("app").hidden) syncMatches(false);
   });
 
   $("import").addEventListener("change", async (e) => {
@@ -1805,7 +1800,7 @@ function viewProfile(p) {
   if (!previousAccount && account && !sameId(account, p)) setPrevious({ ...account });
   $("match-detail").close();
   showTab("overview");
-  openAccount({ name: p.name, tag: p.tag, region: null }, true);
+  openAccount({ name: p.name, tag: p.tag, region: null });
 }
 
 function renderBackLink() {
