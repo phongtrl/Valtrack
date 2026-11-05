@@ -373,7 +373,11 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
   <div class="sheet-inner">
     <div class="sheet-head">
       <div><h2 id="md-title"></h2><p id="md-sub" class="muted"></p></div>
-      <button id="md-close" class="quiet" type="button">Close</button>
+      <div class="md-nav">
+        <button id="md-prev" class="quiet" type="button" aria-label="Newer match" title="Newer match (←)">←</button>
+        <button id="md-next" class="quiet" type="button" aria-label="Older match" title="Older match (→)">→</button>
+        <button id="md-close" class="quiet" type="button">Close</button>
+      </div>
     </div>
     <div id="md-body"></div>
   </div>

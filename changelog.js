@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.0", title: "Browse matches", items: [
+    "In an open match, the ← and → buttons (or arrow keys) move to the newer or older match, in the same order as the match log.",
+  ] },
   { version: "3.9", title: "Manual refresh only", items: [
     "Valtrack no longer fetches new matches by itself when you open the app, switch profiles or come back to the tab. Press Fetch latest when you want an update.",
   ] },

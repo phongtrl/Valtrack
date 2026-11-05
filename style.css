@@ -315,6 +315,7 @@ dialog.sheet { width: min(980px, calc(100% - 32px)); max-width: none; max-height
 .sheet-inner { padding: 22px 24px 28px; }
 .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .sheet-head h2 { margin-bottom: 2px; }
+.md-nav { display: flex; gap: 6px; flex-shrink: 0; }
 .md-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .md-chip { padding: 6px 12px; font-size: .84rem; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; }
 .team { margin-top: 24px; }

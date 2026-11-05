@@ -1590,10 +1590,28 @@ function duelsEl(d) {
   return box;
 }
 
+const sameMatch = (a, b) => String(a.id) === String(b.id);
+
+// Neighbours follow the match log order (current game mode, newest first).
+function detailList() {
+  const list = scope();
+  return list.some((x) => sameMatch(x, detailMatch)) ? list : byDate();
+}
+
+function stepMatch(step) {
+  const list = detailList();
+  const next = list[list.findIndex((x) => sameMatch(x, detailMatch)) + step];
+  if (next) openMatch(next.id);
+}
+
 function renderMatchDetail() {
   const m = detailMatch;
   const dialog = $("match-detail");
   const scroll = dialog.scrollTop;
+  const list = detailList();
+  const at = list.findIndex((x) => sameMatch(x, m));
+  $("md-prev").disabled = at <= 0;
+  $("md-next").disabled = at < 0 || at >= list.length - 1;
   const stripScroll = dialog.querySelector(".tl-strip")?.scrollLeft || 0;
   $("md-title").textContent = `${m.map} · ${m.mode}`;
   $("md-sub").textContent = `${m.date} · ${m.result[0].toUpperCase() + m.result.slice(1)} ${m.roundsWon} – ${m.roundsLost}`;
@@ -1818,6 +1836,13 @@ function bindMatchDetail() {
   });
   const dialog = $("match-detail");
   $("md-close").addEventListener("click", () => dialog.close());
+  $("md-prev").addEventListener("click", () => stepMatch(-1));
+  $("md-next").addEventListener("click", () => stepMatch(1));
+  dialog.addEventListener("keydown", (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest("input, select, textarea")) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); stepMatch(-1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); stepMatch(1); }
+  });
   dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); }); // click on the dimmed backdrop
 }
 
