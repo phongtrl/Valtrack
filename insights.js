@@ -47,6 +47,7 @@ async function fetchRrHistory(force = false, maxAge = FRESH_MS) {
     });
     mergeRr(entries);
     markFetched("rr");
+    renderInsights(scope());
     renderLog(scope());
     if ($("match-detail").open && detailMatch) renderMatchDetail();
   } catch (e) {
