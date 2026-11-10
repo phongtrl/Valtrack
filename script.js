@@ -732,6 +732,8 @@ async function refreshRank() {
   button.setAttribute("aria-busy", "true");
   setStatus("Fetching your rank from HenrikDev…");
   await fetchRankStats(true);
+  await fetchRrHistory(true);
+  render();
   markFetched("rank");
   const failed = $("rank-current").textContent === "Unavailable";
   setStatus(failed ? "Could not load your rank." : "Current rank, peak rank and RR updated.", failed);
@@ -795,7 +797,7 @@ async function syncMatches(manual = true) {
     // Rank and RR only change after a ranked match, so the saved copies are reused (up to a day) unless one was just added.
     if (account.region) {
       await fetchRankStats(newRanked, DAY);
-      await fetchRrHistory(newRanked, DAY);
+      await fetchRrHistory(manual || newRanked, DAY);
       if (newRanked) render();
     }
     syncing = false;
