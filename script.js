@@ -1,10 +1,7 @@
 /* Valtrack. Works when opened straight from the file (no server needed). */
 
-const API = "https://api.henrikdev.xyz";
-// API keys are entered when needed and saved only in this browser.
-const DEFAULT_API_KEY = "";
+const API = "https://valtrack-api.tranphongle.workers.dev";
 const KEY_ACCOUNT = "vt:account";
-const KEY_API = "vt:apikey";
 const KEY_MATCHES = "vt:matches:";
 const KEY_FAVORITES = "vt:favorites";
 const KEY_TAB = "vt:tab";
@@ -204,21 +201,10 @@ async function api(path) {
     err.status = 429;
     throw err;
   }
-  let key = (store.get(KEY_API) || DEFAULT_API_KEY || "").trim();
-  if (!key) {
-    key = (window.prompt("Enter your HenrikDev API key. It will be stored only in this browser. For a public site, use a server-side proxy instead.") || "").trim();
-    if (!key) throw new Error("No API key entered. Fetch cancelled.");
-    if (!store.set(KEY_API, key)) throw new Error("This browser could not save the API key. Enable local storage and try again.");
-  }
   const url = API + path;
   let res;
   try {
-    res = await fetch(url, { headers: { "Authorization": key, "Accept": "application/json" }, cache: "no-store" });
-    if (res.status === 401 || res.status === 403) {
-      const queryUrl = url + (path.includes("?") ? "&" : "?") + "api_key=" + encodeURIComponent(key);
-      const fallback = await fetch(queryUrl, { headers: { "Accept": "application/json" }, cache: "no-store" });
-      if (fallback.ok || !res.ok) res = fallback;
-    }
+    res = await fetch(url, { headers: { "Accept": "application/json" }, cache: "no-store" });
   } catch (e) {
     const err = new Error("Could not reach HenrikDev. Check your internet connection, browser console, and API status.");
     err.status = 0;
