@@ -31,10 +31,8 @@ function mergeRr(entries) {
 
 async function fetchRrHistory(force = false, maxAge = FRESH_MS) {
   if (!force && rrHistory.length && Date.now() - lastFetched("rr") < maxAge) return; // fetched recently: use what is saved
-  const owner = rrKey();
   try {
     const json = await api(`/valorant/v2/mmr-history/${encodeURIComponent(account.region)}/pc/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}`);
-    if (rrKey() !== owner) return; // another profile was opened during the request
     const list = json?.data?.history ?? json?.history ?? (Array.isArray(json?.data) ? json.data : []);
     const entries = [];
     list.forEach((h) => {
@@ -47,8 +45,6 @@ async function fetchRrHistory(force = false, maxAge = FRESH_MS) {
     });
     mergeRr(entries);
     markFetched("rr");
-    renderLog(scope());
-    if ($("match-detail").open && detailMatch) renderMatchDetail();
   } catch (e) {
     console.warn("Could not load RR history:", e);
   }

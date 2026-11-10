@@ -1,8 +1,5 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
-  { version: "4.1", title: "RR per match", items: [
-    "The match log and competitive match details now show RR gained or lost, with green gains and red losses. A dash means RR is unavailable or the match is not competitive.",
-  ] },
   { version: "4.0", title: "Browse matches", items: [
     "In an open match, the ← and → buttons (or arrow keys) move to the newer or older match, in the same order as the match log.",
   ] },
