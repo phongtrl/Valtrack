@@ -1226,6 +1226,21 @@ function scope() {
   return byDate().filter((m) => mode === "all" || String(m.mode || "Unknown") === mode);
 }
 
+// RR belongs to an exact competitive match, never a date or its win/loss result.
+function matchRr(m) {
+  if (!/compet/i.test(m.mode)) return null;
+  const entry = rrHistory.find((h) => String(h.id) === String(m.id));
+  return Number.isFinite(entry?.change) ? entry.change : null;
+}
+
+function rrLabel(change) {
+  return change === null ? "—" : `${change > 0 ? "+" : ""}${change} RR`;
+}
+
+function rrClass(change) {
+  return change === null ? "muted" : change > 0 ? "r-win" : change < 0 ? "r-loss" : "r-draw";
+}
+
 function renderLog(visibleMatches) {
   const body = $("log");
   body.replaceChildren();
@@ -1248,10 +1263,12 @@ function renderLog(visibleMatches) {
     : "Your saved matches will appear here.";
   shown.forEach((m) => {
     const tr = el("tr");
+    const change = matchRr(m);
     const kd = m.deaths ? m.kills / m.deaths : m.kills;
     [
       ["Date", m.date], ["Mode", m.mode], ["Map", m.map], ["Agent", m.agent],
       ["Result", m.result[0].toUpperCase() + m.result.slice(1), "r-" + m.result],
+      ["RR", rrLabel(change), rrClass(change)],
       ["Score", `${m.roundsWon} – ${m.roundsLost}`],
       ["K / D / A", `${m.kills} / ${m.deaths} / ${m.assists}`],
       ["K/D", kd.toFixed(2)], ["ACS", m.acs],
@@ -1615,6 +1632,10 @@ function renderMatchDetail() {
   const stripScroll = dialog.querySelector(".tl-strip")?.scrollLeft || 0;
   $("md-title").textContent = `${m.map} · ${m.mode}`;
   $("md-sub").textContent = `${m.date} · ${m.result[0].toUpperCase() + m.result.slice(1)} ${m.roundsWon} – ${m.roundsLost}`;
+  const change = matchRr(m);
+  if (/compet/i.test(m.mode)) {
+    $("md-sub").append(document.createTextNode(" · "), el("span", rrClass(change), rrLabel(change)));
+  }
   const body = $("md-body");
   const d = m.details;
   if (!d) {
