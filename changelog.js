@@ -1,5 +1,9 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.3", title: "Private personal store", items: [
+    "Connect an experimental Windows companion from Store to read daily offers for the account signed into Riot Client. Download the companion, choose your region and pair with its temporary code.",
+    "Riot credentials remain in the companion and are used only with Riot. Personal offers and the pairing code stay in page memory; Disconnect clears them.",
+  ] },
   { version: "4.2", title: "Today's store", items: [
     "A separate Store tab shows live featured bundles, item prices, images and expiry times. Refresh store checks for changes, and your last snapshot stays available offline.",
     "Personal daily offers are shown as not connected; they require a separate private Riot connection.",

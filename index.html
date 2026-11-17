@@ -301,9 +301,48 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       </section>
       <section class="card pad shop-personal" aria-labelledby="personal-store-title">
         <span class="shop-label">Personal daily offers</span>
-        <h2 id="personal-store-title">Private connection needed</h2>
-        <p>Your four daily skin offers are unique to your Riot account. They cannot be retrieved using your Riot ID or Valtrack's current API connection.</p>
-        <p class="hint">Personal store is not connected yet. It will need a separate private Riot connection; switching tracked profiles does not connect a Riot account.</p>
+        <h2 id="personal-store-title">Connect your Windows PC</h2>
+        <p>Read your daily offers from the Riot account signed into the official Riot Client on this PC.</p>
+        <details class="personal-setup">
+          <summary>First-time setup</summary>
+          <ol>
+            <li>Install <a href="https://www.python.org/downloads/windows/" target="_blank" rel="noopener noreferrer">Python 3.10 or newer</a> if needed.</li>
+            <li><a href="companion/valtrack-companion-windows.zip" download>Download the Windows companion</a> and choose Extract All.</li>
+            <li>Sign into Riot Client, open VALORANT, then double-click <b>start-companion.cmd</b> in the extracted folder. Keep its window open.</li>
+            <li>Choose your account region below, paste the temporary code printed by the companion, and press Connect. Allow local network access if your browser asks.</li>
+          </ol>
+          <p class="hint">Experimental connection using unofficial Riot endpoints. Works on the Windows PC running the companion. Your Riot password and session tokens stay out of Valtrack and Cloudflare; the pairing code and personal offers stay only in this page's memory.</p>
+          <a href="https://github.com/phongtrl/Valtrack/blob/main/companion/README.md" target="_blank" rel="noopener noreferrer">Setup and troubleshooting</a>
+        </details>
+        <form id="personal-connect-form" class="personal-form">
+          <label>Riot account region
+            <select id="personal-shard">
+              <option value="eu">Europe</option>
+              <option value="na">Americas (NA, BR, LATAM)</option>
+              <option value="ap">Asia-Pacific</option>
+              <option value="kr">Korea</option>
+              <option value="pbe">PBE</option>
+            </select>
+          </label>
+          <label class="grow">Companion pairing code
+            <input id="personal-pairing" type="password" autocomplete="off" spellcheck="false" required placeholder="Code from the companion window" aria-describedby="personal-code-note">
+          </label>
+          <button id="personal-connect" type="submit">Connect</button>
+        </form>
+        <p id="personal-code-note" class="hint">Use the temporary companion code here, never your Riot password or HenrikDev key.</p>
+        <p id="personal-status" class="hint" role="status" aria-live="polite"></p>
+        <div id="personal-connected" hidden>
+          <div class="section-head personal-account-head">
+            <h3 id="personal-account"></h3>
+            <div class="personal-actions">
+              <button id="personal-refresh" class="tool icon-only" type="button" aria-label="Refresh personal store" title="Refresh personal store"><svg class="icon refresh" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20.5 4v4.5H16"/></svg></button>
+              <button id="personal-disconnect" class="quiet small" type="button">Disconnect</button>
+            </div>
+          </div>
+          <p id="personal-fetched" class="hint"></p>
+          <p id="personal-expiry" class="hint"></p>
+          <div id="personal-offers" class="shop-items"></div>
+        </div>
       </section>
     </div>
 
@@ -364,7 +403,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
         <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, your servers, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, opening duels and trades, clutches and ability use.</li>
         <li><b>Progress:</b> trend charts (hover or tap a dot for details), accuracy over time, rank history, a tilt check and a rank goal estimate.</li>
-        <li><b>Store:</b> current featured bundles, item prices and expiry times. Personal daily offers need a separate private Riot connection and are not connected yet.</li>
+        <li><b>Store:</b> current featured bundles, item prices and expiry times. Connect the Windows companion to see your signed-in Riot account’s personal daily offers.</li>
         <li><b>Compare:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
         <li>The <b>Game mode</b> selector at the top applies to every tab. It starts on Competitive.</li>
       </ul>
@@ -418,6 +457,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 <script src="insights.js"></script>
 <script src="friends.js"></script>
 <script src="store.js"></script>
+<script src="store-private.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

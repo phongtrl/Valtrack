@@ -539,3 +539,15 @@ dialog p { margin-bottom: 18px; }
   .shop-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .shop-item { padding: 12px; }
 }
+
+/* Private personal store */
+.personal-setup { margin: 18px 0; }
+.personal-setup summary { cursor: pointer; }
+.personal-setup li + li { margin-top: 8px; }
+.personal-form { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-top: 20px; }
+.personal-form .grow { flex: 1; min-width: min(240px, 100%); }
+.personal-actions { display: flex; align-items: center; gap: 12px; }
+.personal-account-head { margin-top: 18px; }
+@media (max-width: 640px) {
+  .personal-form { flex-direction: column; align-items: stretch; }
+}
