@@ -745,8 +745,8 @@ async function refreshRank() {
   render();
   const failed = $("rank-current").textContent === "Unavailable";
   const rrFailed = dataStates.get(freshnessOwner() + ":rr")?.state === "error";
-  setStatus(failed ? "Could not load your rank. See update status above."
-    : rrFailed ? "Rank updated, but RR history could not be refreshed. See update status above."
+  setStatus(failed ? "Could not load your rank."
+    : rrFailed ? "Rank updated, but RR history could not be refreshed."
       : "Current rank, peak rank and RR updated.", failed || rrFailed);
   button.disabled = false;
   button.classList.remove("is-loading");
