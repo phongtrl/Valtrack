@@ -18,14 +18,16 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="logo" viewBox="0 0 96 96" fill="currentColor">
-    <g id="logo-line"><path d="M19 32 41 75 77 22" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></g>
-    <g id="logo-tip" fill="inherit"><circle cx="77" cy="22" r="9"/></g>
+    <g id="logo-line"><path d="M14 29 36 78 56 46 81 18" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="square" stroke-linejoin="bevel" pathLength="1"/></g>
+    <g id="logo-checkpoints"><path d="M36 72l6 6-6 6-6-6Z"/><path d="M56 40l6 6-6 6-6-6Z"/></g>
+    <g id="logo-tip" fill="#FF4655"><path d="M81 9l9 9-9 9-9-9Z"/></g>
   </symbol>
 </svg>
 
 <div id="splash" class="splash" aria-hidden="true">
   <svg class="splash-logo" viewBox="0 0 96 96">
     <use href="#logo-line" class="splash-line"/>
+    <use href="#logo-checkpoints" class="splash-checkpoints"/>
     <use href="#logo-tip" class="splash-peak"/>
   </svg>
 </div>

@@ -77,7 +77,9 @@ label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 .splash.is-done { opacity: 0; visibility: hidden; }
 .splash-logo { width: min(140px, 36vw); height: auto; overflow: visible; }
 .splash-line { color: var(--ink); stroke-dasharray: 1; animation: splash-draw .7s cubic-bezier(.6, 0, .3, 1) both; }
-.splash-peak { fill: var(--wood); transform-box: fill-box; transform-origin: center; animation: splash-pop .35s ease-out .65s both, splash-pulse 1.4s ease-in-out 1s infinite; }
+.splash-checkpoints { fill: var(--ink); animation: splash-checkpoints .2s .48s both; }
+@keyframes splash-checkpoints { from { opacity: 0; } }
+.splash-peak { transform-box: fill-box; transform-origin: center; animation: splash-pop .35s ease-out .65s both, splash-pulse 1.4s ease-in-out 1s infinite; }
 @keyframes splash-draw { from { stroke-dashoffset: 1; } }
 @keyframes splash-pop { from { transform: scale(0); } }
 @keyframes splash-pulse { 50% { transform: scale(1.18); } }
