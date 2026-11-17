@@ -517,3 +517,25 @@ dialog p { margin-bottom: 18px; }
   .splash { transition: opacity .3s ease, visibility .3s !important; }
 }
 #cmp-result.stack { --gap: 14px; }
+
+/* Store */
+.shop-bundles { display: grid; gap: 24px; margin-top: 24px; }
+.shop-bundle { overflow: hidden; }
+.shop-banner { display: block; width: 100%; aspect-ratio: 2.6; object-fit: cover; background: var(--hover); }
+.shop-content { padding: 22px; }
+.shop-bundle-head { align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.shop-bundle-head h3 { font-size: 1.6rem; }
+.shop-price { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.shop-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 20px; }
+.shop-item { min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; }
+.shop-item-image { width: 100%; height: 90px; object-fit: contain; }
+.shop-item-name { font-size: .88rem; overflow-wrap: anywhere; }
+.shop-item-price { margin-top: auto; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.shop-item-price s { display: block; }
+.shop-label { display: block; margin-bottom: 12px; color: var(--muted); font-size: .8rem; }
+.shop-personal h2 { margin-bottom: 12px; }
+@media (max-width: 640px) {
+  .shop-content { padding: 16px; }
+  .shop-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shop-item { padding: 12px; }
+}

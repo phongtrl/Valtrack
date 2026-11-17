@@ -67,6 +67,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
           <button id="tabbtn-progress" class="tab" role="tab" type="button" aria-controls="tab-progress" aria-selected="false" tabindex="-1" data-tab="progress">Progress</button>
           <button id="tabbtn-friends" class="tab" role="tab" type="button" aria-controls="tab-friends" aria-selected="false" tabindex="-1" data-tab="friends">Friends</button>
           <button id="tabbtn-compare" class="tab" role="tab" type="button" aria-controls="tab-compare" aria-selected="false" tabindex="-1" data-tab="compare">Compare</button>
+          <button id="tabbtn-store" class="tab" role="tab" type="button" aria-controls="tab-store" aria-selected="false" tabindex="-1" data-tab="store">Store</button>
         </nav>
         <div class="actions">
           <div class="account-switcher">
@@ -286,6 +287,26 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       </section>
     </div>
 
+    <!-- Store: public bundles, with personal offers kept separate -->
+    <div id="tab-store" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-store" hidden>
+      <section>
+        <div class="section-head">
+          <h2>Today's store</h2>
+          <button id="store-refresh" class="quiet" type="button">Refresh store</button>
+        </div>
+        <p class="muted">Featured bundles available to everyone. Your personal daily offers are separate.</p>
+        <p id="store-status" class="hint" role="status" aria-live="polite"></p>
+        <p id="store-updated" class="hint"></p>
+        <div id="store-bundles" class="shop-bundles"></div>
+      </section>
+      <section class="card pad shop-personal" aria-labelledby="personal-store-title">
+        <span class="shop-label">Personal daily offers</span>
+        <h2 id="personal-store-title">Private connection needed</h2>
+        <p>Your four daily skin offers are unique to your Riot account. They cannot be retrieved using your Riot ID or Valtrack's current API connection.</p>
+        <p class="hint">Personal store is not connected yet. It will need a separate private Riot connection; switching tracked profiles does not connect a Riot account.</p>
+      </section>
+    </div>
+
     <!-- Compare: catch up with another player -->
     <div id="tab-compare" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-compare" hidden>
       <section>
@@ -343,6 +364,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
         <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, your servers, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, opening duels and trades, clutches and ability use.</li>
         <li><b>Progress:</b> trend charts (hover or tap a dot for details), accuracy over time, rank history, a tilt check and a rank goal estimate.</li>
+        <li><b>Store:</b> current featured bundles, item prices and expiry times. Personal daily offers need a separate private Riot connection and are not connected yet.</li>
         <li><b>Compare:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
         <li>The <b>Game mode</b> selector at the top applies to every tab. It starts on Competitive.</li>
       </ul>
@@ -395,6 +417,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 <script src="changelog.js"></script>
 <script src="insights.js"></script>
 <script src="friends.js"></script>
+<script src="store.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

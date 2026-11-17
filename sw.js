@@ -1,6 +1,6 @@
 /* Offline support: the app files are cached and refreshed in the background. API calls are never cached. */
-const CACHE = "vt-v41-rr-refresh";
-const SHELL = ["./", "index.html", "style.css", "script.js", "insights.js", "friends.js", "changelog.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-180.png"];
+const CACHE = "vt-v42-store";
+const SHELL = ["./", "index.html", "style.css", "script.js", "insights.js", "friends.js", "store.js", "changelog.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-180.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

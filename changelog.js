@@ -1,5 +1,9 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.2", title: "Today's store", items: [
+    "A separate Store tab shows live featured bundles, item prices, images and expiry times. Refresh store checks for changes, and your last snapshot stays available offline.",
+    "Personal daily offers are shown as not connected; they require a separate private Riot connection.",
+  ] },
   { version: "4.1", title: "RR per match", items: [
     "The match log and competitive match details now show RR gained or lost, with green gains and red losses. A dash means RR is unavailable or the match is not competitive.",
   ] },

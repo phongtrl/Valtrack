@@ -885,7 +885,7 @@ function closeAccountMenu() {
 
 /* ---------- Tabs ---------- */
 
-const TABS = ["overview", "matches", "stats", "progress", "friends", "compare"];
+const TABS = ["overview", "matches", "stats", "progress", "friends", "compare", "store"];
 
 let activeTab = null;
 
@@ -907,6 +907,9 @@ function showTab(name, focus = false) {
   });
   store.set(KEY_TAB, name);
   if (name === "friends") onFriendsTab();
+  if (shopTimer) { clearInterval(shopTimer); shopTimer = null; }
+  $("mode-filter").parentElement.hidden = name === "store";
+  if (name === "store") onStoreTab();
 }
 
 // The phone menu (three bars). On wide screens the same markup is simply the top bar.
