@@ -127,8 +127,6 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       </label>
     </div>
 
-    <div id="data-freshness" class="freshness" role="list" aria-label="Data freshness"></div>
-
     <div id="backup-note" class="note backup" hidden>
       <span>It has been a while since your last backup. Your history is saved only in this browser.</span>
       <span class="backup-actions"><button id="backup-now" type="button" class="small">Export now</button><button id="backup-later" type="button" class="quiet small">Later</button></span>
@@ -194,7 +192,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         </form>
         <p id="match-filter-note" class="hint" role="status"></p>
         <p id="log-count" class="hint" aria-live="polite"></p>
-        <p class="hint">RR applies to Competitive matches in your saved RR history. A dash means no RR record is available; see the update status above.</p>
+        <p class="hint">RR applies to Competitive matches in your saved RR history. A dash means no RR record is available.</p>
         <p class="hint">Select a match to see every player, K/D, ACS and who dominated who.</p>
         <nav class="pager pager-top" aria-label="Match log pages, top" data-pager hidden>
           <button class="quiet" type="button" data-step="-1">← Newer</button>
@@ -406,7 +404,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <h3>Getting started</h3>
       <ol>
         <li>Enter your username and tag, for example <b>lev0nt</b> and <b>101</b>, and press Track.</li>
-        <li>Press the refresh icon to load your recent matches, rank and rank history. The freshness indicators show separate match, rank, RR and store update times. New matches are loaded when you press Fetch latest. To update only your current rank, peak rank and RR, press Refresh rank in Overview.</li>
+        <li>Press the refresh icon to load your recent matches, rank and rank history. New matches are loaded when you press Fetch latest. To update only your current rank, peak rank and RR, press Refresh rank in Overview.</li>
         <li>Tap the star to save a player as a favorite. Favorites let you switch profile quickly under Account, and you can compare ranks with them in one tap.</li>
         <li>Use the moon or sun icon to switch between light and dark mode.</li>
       </ol>
