@@ -1,5 +1,9 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.4", title: "Freshness and match filters", items: [
+    "Separate update times and loading/failure states for matches, rank, RR history and the featured store. Failed updates keep the previous successful timestamp.",
+    "Filter the match log by map, agent, result and date range, or search saved player names. Match navigation follows the filtered log.",
+  ] },
   { version: "4.3", title: "Private personal store", items: [
     "Connect an experimental Windows companion from Store to read daily offers for the account signed into Riot Client. Download the companion, choose your region and pair with its temporary code.",
     "Riot credentials remain in the companion and are used only with Riot. Personal offers and the pairing code stay in page memory; Disconnect clears them.",

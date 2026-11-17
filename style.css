@@ -551,3 +551,20 @@ dialog p { margin-bottom: 18px; }
 @media (max-width: 640px) {
   .personal-form { flex-direction: column; align-items: stretch; }
 }
+
+/* Freshness and match filters */
+.freshness { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 28px; }
+.freshness-item { display: grid; align-content: start; gap: 3px; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: .78rem; }
+.freshness-item strong { font-weight: 500; }
+.freshness-item .error { min-height: 0; font-size: .78rem; }
+.freshness-error { color: var(--loss); overflow-wrap: anywhere; }
+.match-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 16px; margin-top: 18px; }
+.match-search { grid-column: span 2; }
+@media (max-width: 720px) {
+  .freshness { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .match-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 400px) {
+  .match-filters { grid-template-columns: minmax(0, 1fr); }
+  .match-search { grid-column: auto; }
+}

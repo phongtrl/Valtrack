@@ -86,7 +86,7 @@ function fetchedTimes() {
   try { return JSON.parse(store.get(fetchedKey()) || "{}") || {}; } catch (e) { return {}; }
 }
 const lastFetched = (kind) => Number(fetchedTimes()[kind]) || 0;
-const markFetched = (kind) => store.set(fetchedKey(), JSON.stringify({ ...fetchedTimes(), [kind]: Date.now() }));
+const markFetched = (kind, timestamp = Date.now()) => { store.set(fetchedKey(), JSON.stringify({ ...fetchedTimes(), [kind]: timestamp })); renderFreshness(); };
 
 const matchKey = () => KEY_MATCHES + lower(account.name) + "#" + lower(account.tag);
 
@@ -173,7 +173,7 @@ function openAccount(acc) {
   account = acc;
   store.set(KEY_ACCOUNT, JSON.stringify(account));
   matches = loadMatches();
-  logPage = 0;
+  resetMatchFilters();
   rankNow = null;
   loadRr();
   $("welcome").hidden = true;
@@ -624,6 +624,8 @@ async function fetchMmr(name, tag, region, force = false, maxAge = FRESH_MS) {
 }
 
 async function fetchRankStats(force = false, maxAge = FRESH_MS) {
+  const owner = account;
+  setDataState("rank", "loading");
   const currentNode = $("rank-current");
   const peakNode = $("rank-peak");
   const rrNode = $("rank-rr");
@@ -636,6 +638,10 @@ async function fetchRankStats(force = false, maxAge = FRESH_MS) {
   $("rank-rr-note").textContent = "Ranked rating";
   try {
     const data = await fetchMmr(account.name, account.tag, account.region, force, maxAge);
+    if (account !== owner) return false;
+    const snapshot = savedCopy(`mmr:${lower(owner.name)}#${lower(owner.tag)}`);
+    if (snapshot?.t) markFetched("rank", snapshot.t);
+    setDataState("rank", "success");
     const current = data.current || {};
     const peak = data.peak || {};
     const currentTier = current.tier?.name || current.tier?.name_short || "Unranked / unavailable";
@@ -655,6 +661,8 @@ async function fetchRankStats(force = false, maxAge = FRESH_MS) {
       $("rank-rr-note").textContent = `Last match: ${change > 0 ? "+" : ""}${change} RR`;
     }
   } catch (err) {
+    if (account !== owner) return false;
+    setDataState("rank", "error", err.message);
     currentNode.textContent = "Unavailable";
     $("rank-current-icon").replaceChildren();
     $("rank-peak-icon").replaceChildren();
@@ -666,6 +674,7 @@ async function fetchRankStats(force = false, maxAge = FRESH_MS) {
     rankNow = null;
     console.warn("Could not fetch Valorant rank stats:", err);
   } finally {
+    if (account !== owner) return false;
     $("rank-panel").classList.remove("rank-loading");
     renderGoal();
   }
@@ -734,9 +743,11 @@ async function refreshRank() {
   await fetchRankStats(true);
   await fetchRrHistory(true);
   render();
-  markFetched("rank");
   const failed = $("rank-current").textContent === "Unavailable";
-  setStatus(failed ? "Could not load your rank." : "Current rank, peak rank and RR updated.", failed);
+  const rrFailed = dataStates.get(freshnessOwner() + ":rr")?.state === "error";
+  setStatus(failed ? "Could not load your rank. See update status above."
+    : rrFailed ? "Rank updated, but RR history could not be refreshed. See update status above."
+      : "Current rank, peak rank and RR updated.", failed || rrFailed);
   button.disabled = false;
   button.classList.remove("is-loading");
   button.setAttribute("aria-busy", "false");
@@ -758,6 +769,8 @@ async function syncMatches(manual = true) {
   setStatus("Fetching recent matches from HenrikDev…");
   $("app").classList.toggle("loading", !matches.length);
   let newRanked = false;
+  const syncOwner = account;
+  setDataState("matches", "loading");
   try {
     if (!account.region) {
       account.region = await lookupRegion();
@@ -767,6 +780,8 @@ async function syncMatches(manual = true) {
     const rows = await fetchActMatches(new Set(matches.map((m) => String(m.id))));
     if (account !== who) return; // another profile was opened meanwhile
     if (!rows.length) {
+      markFetched("matches");
+      setDataState("matches", "success");
       setStatus("The API responded, but returned no matches for this Riot ID. Check the region and whether match history is available.", true);
       return;
     }
@@ -786,18 +801,20 @@ async function syncMatches(manual = true) {
     });
     matches = sortMatches([...existing.values()]);
     markFetched("matches");
+    setDataState("matches", "success");
     saveMatches();
     render();
     setStatus(added
       ? `Fetched ${parsed.length} match(es); added ${added} new. ${matches.length} total saved.`
       : `No new matches since the last fetch. ${matches.length} total saved.`);
   } catch (e) {
+    if (account === syncOwner) setDataState("matches", "error", e.message || "Match refresh failed.");
     setStatus(e.message || "Fetch failed. Check your API key and Riot ID.", true);
   } finally {
     // Rank and RR only change after a ranked match, so the saved copies are reused (up to a day) unless one was just added.
-    if (account.region) {
+    if (account === syncOwner && account.region) {
       await fetchRankStats(newRanked, DAY);
-      await fetchRrHistory(manual || newRanked, DAY);
+      if (account === syncOwner) await fetchRrHistory(manual || newRanked, DAY);
       if (newRanked) render();
     }
     syncing = false;
@@ -1142,6 +1159,8 @@ const byDate = () => sortMatches(matches);
 
 function render() {
   renderModeFilter();
+  renderMatchFilterOptions();
+  renderFreshness();
   const view = scope();
   const s = summarize(view);
   $("s-matches").textContent = s.n;
@@ -1233,10 +1252,14 @@ function rrClass(change) {
 }
 
 function renderLog(visibleMatches) {
+  visibleMatches = filterMatchLog(visibleMatches);
+  $("match-filter-note").textContent = matchFilters.since && matchFilters.until && matchFilters.since > matchFilters.until
+    ? "Choose an end date on or after the start date."
+    : matchFilters.query.trim() ? "Player search covers matches with saved player details. Load Details for older matches to include their players." : "Filters apply to the match log and match navigation.";
   const body = $("log");
   body.replaceChildren();
   $("log-empty").hidden = visibleMatches.length > 0;
-  $("log-empty").textContent = matches.length ? "No matches for this game mode." : "No matches yet. Fetch your latest to load match history.";
+  $("log-empty").textContent = matches.length ? "No matches match these filters. Try clearing filters or changing game mode." : "No matches yet. Fetch your latest to load match history.";
   const pages = Math.max(1, Math.ceil(visibleMatches.length / LOG_PAGE));
   logPage = Math.min(Math.max(0, logPage), pages - 1);
   const from = logPage * LOG_PAGE;
@@ -1602,7 +1625,7 @@ const sameMatch = (a, b) => String(a.id) === String(b.id);
 
 // Neighbours follow the match log order (current game mode, newest first).
 function detailList() {
-  const list = scope();
+  const list = filterMatchLog(scope());
   return list.some((x) => sameMatch(x, detailMatch)) ? list : byDate();
 }
 
@@ -1883,4 +1906,5 @@ function setupStorageNotice() {
 }
 
 setupStorageNotice();
+initEnhancements();
 init();

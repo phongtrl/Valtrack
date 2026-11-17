@@ -32,10 +32,12 @@ function mergeRr(entries) {
 async function fetchRrHistory(force = false, maxAge = FRESH_MS) {
   if (!force && rrHistory.length && Date.now() - lastFetched("rr") < maxAge) return; // fetched recently: use what is saved
   const owner = rrKey();
+  setDataState("rr", "loading");
   try {
     const json = await api(`/valorant/v2/mmr-history/${encodeURIComponent(account.region)}/pc/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}`);
     if (rrKey() !== owner) return; // another profile was opened during the request
     const list = json?.data?.history ?? json?.history ?? (Array.isArray(json?.data) ? json.data : []);
+    if (!Array.isArray(list)) throw new Error("Unexpected RR history response.");
     const entries = [];
     list.forEach((h) => {
       const id = String(h?.match_id ?? "");
@@ -47,10 +49,12 @@ async function fetchRrHistory(force = false, maxAge = FRESH_MS) {
     });
     mergeRr(entries);
     markFetched("rr");
+    setDataState("rr", "success");
     renderInsights(scope());
     renderLog(scope());
     if ($("match-detail").open && detailMatch) renderMatchDetail();
   } catch (e) {
+    if (rrKey() === owner) setDataState("rr", "error", e.message || "RR history refresh failed.");
     console.warn("Could not load RR history:", e);
   }
 }

@@ -127,6 +127,8 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       </label>
     </div>
 
+    <div id="data-freshness" class="freshness" role="list" aria-label="Data freshness"></div>
+
     <div id="backup-note" class="note backup" hidden>
       <span>It has been a while since your last backup. Your history is saved only in this browser.</span>
       <span class="backup-actions"><button id="backup-now" type="button" class="small">Export now</button><button id="backup-later" type="button" class="quiet small">Later</button></span>
@@ -181,7 +183,18 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <div class="section-head">
           <h2>Match log</h2>
         </div>
+        <form id="match-filter-form" class="match-filters card pad" aria-label="Match filters">
+          <label>Map<select id="match-map"><option value="">All maps</option></select></label>
+          <label>Agent<select id="match-agent"><option value="">All agents</option></select></label>
+          <label>Result<select id="match-result"><option value="">All results</option><option value="win">Win</option><option value="loss">Loss</option><option value="draw">Draw</option></select></label>
+          <label>From<input id="match-since" type="date"></label>
+          <label>Through<input id="match-until" type="date"></label>
+          <label class="match-search">Search<input id="match-query" type="search" placeholder="Player name#tag, map or agent" autocomplete="off"></label>
+          <button id="match-clear" class="quiet" type="button">Clear filters</button>
+        </form>
+        <p id="match-filter-note" class="hint" role="status"></p>
         <p id="log-count" class="hint" aria-live="polite"></p>
+        <p class="hint">RR applies to Competitive matches in your saved RR history. A dash means no RR record is available; see the update status above.</p>
         <p class="hint">Select a match to see every player, K/D, ACS and who dominated who.</p>
         <nav class="pager pager-top" aria-label="Match log pages, top" data-pager hidden>
           <button class="quiet" type="button" data-step="-1">← Newer</button>
@@ -393,14 +406,14 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <h3>Getting started</h3>
       <ol>
         <li>Enter your username and tag, for example <b>lev0nt</b> and <b>101</b>, and press Track.</li>
-        <li>Press the refresh icon to load your recent matches, rank and rank history. The app also refreshes by itself when you open it, at most every 10 minutes. To update only your current rank, peak rank and RR, press Refresh rank in Overview.</li>
+        <li>Press the refresh icon to load your recent matches, rank and rank history. The freshness indicators show separate match, rank, RR and store update times. New matches are loaded when you press Fetch latest. To update only your current rank, peak rank and RR, press Refresh rank in Overview.</li>
         <li>Tap the star to save a player as a favorite. Favorites let you switch profile quickly under Account, and you can compare ranks with them in one tap.</li>
         <li>Use the moon or sun icon to switch between light and dark mode.</li>
       </ol>
       <h3>Around the app</h3>
       <ul>
         <li><b>Overview:</b> win rate, record, K/D, ACS, current and peak rank, today's session and your recent form.</li>
-        <li><b>Matches:</b> every match you have fetched. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
+        <li><b>Matches:</b> every match you have fetched. Filter by map, agent, result, dates or a saved player name. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
         <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, your servers, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, opening duels and trades, clutches and ability use.</li>
         <li><b>Progress:</b> trend charts (hover or tap a dot for details), accuracy over time, rank history, a tilt check and a rank goal estimate.</li>
         <li><b>Store:</b> current featured bundles, item prices and expiry times. Connect the Windows companion to see your signed-in Riot account’s personal daily offers.</li>
@@ -412,7 +425,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <div class="faq">
         <details open><summary>Do players need to agree to be looked up?</summary><p>Yes. Valtrack gets its data from the HenrikDev Valorant API, which only allows looking up players who have given their consent. Track your own account, and only add, favorite, compare with or open the profile of players who have agreed to it. Services that look up players without consent are not allowed and can be banned from the API.</p></details>
         <details><summary>Which matches does Valtrack load?</summary><p>Your last 50 matches in the current act. Valtrack is made for PC players. The first load can take a little while, because matches arrive 10 at a time and are paced to stay within the data source's limit. After that only new matches are fetched. Valtrack keeps every match it has fetched, so older acts stay too. Use Export under Account now and then as a backup.</p></details>
-        <details><summary>Why does the refresh button sometimes not fetch anything?</summary><p>To stay within the data source's limits, fetches are spaced out: automatic refreshes wait 10 minutes and the button waits one minute. The icon still spins briefly, and the status line tells you when you last fetched. Rank and RR history are only asked for again after a new ranked match, or once a day. If the data source asks us to slow down, the app pauses for a moment.</p></details>
+        <details><summary>Why does the refresh button sometimes not fetch anything?</summary><p>To stay within the data source's limits, fetches are spaced out: automatic refreshes wait 10 minutes and the button waits one minute. The icon still spins briefly, and the status line tells you when you last fetched. Manual Fetch latest and Refresh rank also update RR history. Rank data can reuse its saved copy when no new ranked match is found. If the data source asks us to slow down, the app pauses for a moment.</p></details>
         <details><summary>How does the Friends tab work?</summary><p>It lists you and everyone you have favorited with the star. Nothing loads by itself: tap the wheel next to a friend to load just that friend. That costs up to two requests (rank and their last 10 ranked matches, plus one the first time to find their region). What you load is saved, shown the next time without any request, and a second tap within 10 minutes reuses it. Your own win rate and K/D use the matches you already have saved.</p></details>
         <details><summary>Where is my data stored?</summary><p>Only in this browser, on this device. It doesn't appear on other devices, and clearing your browser data removes it. Use Export and Import under Account to back up or move it.</p></details>
         <details><summary>Can I see live matches?</summary><p>No. There is no public live data for Valorant. Matches show up after they have finished, the next time you fetch.</p></details>
@@ -458,6 +471,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 <script src="friends.js"></script>
 <script src="store.js"></script>
 <script src="store-private.js"></script>
+<script src="enhancements.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

@@ -99,6 +99,7 @@ function renderShop() {
   });
   $("store-updated").textContent = `Snapshot from ${new Date(shopSnapshot.fetchedAt).toLocaleString()}. Prices in Valorant Points; confirm availability in game.`;
   updateShopCountdowns();
+  renderFreshness();
 }
 
 async function loadShop(force = false) {
@@ -120,6 +121,7 @@ async function loadShop(force = false) {
     return;
   }
   shopLoading = true;
+  setDataState("store", "loading");
   const button = $("store-refresh");
   button.disabled = true;
   button.classList.add("is-loading");
@@ -152,7 +154,9 @@ async function loadShop(force = false) {
     store.set(KEY_SHOP, JSON.stringify(shopSnapshot));
     renderShop();
     status.textContent = "Featured store updated.";
+    setDataState("store", "success");
   } catch (error) {
+    setDataState("store", "error", error.message || "Store refresh failed.");
     status.className = "error";
     status.textContent = `${error.message || "Could not load the store."}${shopSnapshot ? " Showing a saved snapshot; offers may have changed." : " Press Refresh store to retry."}`;
   } finally {
