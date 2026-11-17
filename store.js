@@ -113,12 +113,16 @@ async function loadShop(force = false) {
     return;
   }
   if (force && age < 60000) {
+    const button = $("store-refresh");
+    button.classList.add("is-loading");
+    setTimeout(() => { if (!shopLoading) button.classList.remove("is-loading"); }, 700);
     $("store-status").textContent = "Store was just updated. You can refresh again in a minute.";
     return;
   }
   shopLoading = true;
   const button = $("store-refresh");
   button.disabled = true;
+  button.classList.add("is-loading");
   button.setAttribute("aria-busy", "true");
   const status = $("store-status");
   status.className = "hint";
@@ -154,6 +158,7 @@ async function loadShop(force = false) {
   } finally {
     shopLoading = false;
     button.disabled = false;
+    button.classList.remove("is-loading");
     button.setAttribute("aria-busy", "false");
   }
 }
