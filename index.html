@@ -8,6 +8,7 @@
 <meta name="description" content="Valtrack: analyse your Valorant games and see your progress.">
 <meta name="apple-mobile-web-app-title" content="Valtrack">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
 <script>/* set the theme before first paint (script.js keeps it updated) */
 try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentElement.dataset.theme = (p === "dark" || (p === "auto" && matchMedia("(prefers-color-scheme: dark)").matches)) ? "dark" : "light"; } catch (e) {}
@@ -16,20 +17,16 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="logo" viewBox="38 39 125 108">
-    <polyline points="44,64 79,138 112,92 149,53" style="fill:none;stroke:currentColor;stroke-width:8;stroke-linecap:round;stroke-linejoin:round"/>
-    <circle cx="79" cy="138" r="5" style="fill:currentColor;stroke:var(--logo-gap, var(--page));stroke-width:3"/>
-    <circle cx="112" cy="92" r="5" style="fill:currentColor;stroke:var(--logo-gap, var(--page));stroke-width:3"/>
-    <circle cx="149" cy="53" r="12" style="fill:var(--wood)"/>
+  <symbol id="logo" viewBox="0 0 96 96" fill="currentColor">
+    <g id="logo-line"><path d="M19 32 41 75 77 22" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></g>
+    <g id="logo-tip" fill="inherit"><circle cx="77" cy="22" r="9"/></g>
   </symbol>
 </svg>
 
 <div id="splash" class="splash" aria-hidden="true">
-  <svg class="splash-logo" viewBox="38 39 125 108">
-    <polyline class="splash-line" pathLength="1" points="44,64 79,138 112,92 149,53"/>
-    <circle class="splash-node" cx="79" cy="138" r="5"/>
-    <circle class="splash-node" cx="112" cy="92" r="5"/>
-    <circle class="splash-peak" cx="149" cy="53" r="12"/>
+  <svg class="splash-logo" viewBox="0 0 96 96">
+    <use href="#logo-line" class="splash-line"/>
+    <use href="#logo-tip" class="splash-peak"/>
   </svg>
 </div>
 
