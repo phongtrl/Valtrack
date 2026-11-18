@@ -17,6 +17,7 @@ import uuid
 
 ORIGIN = "https://phongtrl.github.io"
 PORT = 8766
+VERSION = "1.1.0"
 VP = "85ad13f7-3d1b-5128-9eb2-7cd8a7c127b7"
 SHARDS = {"eu", "na", "ap", "kr", "pbe"}
 
@@ -245,7 +246,7 @@ def main():
     from tkinter import messagebox, ttk
 
     root = tk.Tk()
-    root.title("Valtrack personal store")
+    root.title(f"Valtrack personal store · v{VERSION}")
     try:
         server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     except OSError:

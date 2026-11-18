@@ -5,7 +5,7 @@ This is an experimental, read-only companion using unofficial Riot Client endpoi
 ## Setup
 
 1. Install Python 3.10 or newer from https://www.python.org/downloads/windows/ if it is not installed already. Include Tcl/Tk support in the installer. No extra packages are needed.
-2. Download `valtrack-companion-windows.zip`, right-click it and choose **Extract All**.
+2. Download `valtrack-companion-windows-v1.1.0.zip`, right-click it and choose **Extract All**.
 3. Sign into the official Riot Client and open VALORANT. Leave it open.
 4. Double-click `start-companion.cmd` inside the extracted folder. Do not run it as administrator.
 5. Open https://phongtrl.github.io/Valtrack/ on the **same PC**, select **Store**, and find **Personal daily offers**.
