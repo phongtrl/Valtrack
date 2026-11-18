@@ -30,12 +30,12 @@ function renderPersonalStore() {
 async function connectPersonalStore(event) {
   event?.preventDefault();
   if (personalRequest) return;
-  const pairing = personalPairing || $("personal-pairing").value.trim();
+  const pairing = personalPairing || $("personal-pairing").value.replace(/\s/g, "").toLowerCase();
   const status = $("personal-status");
   status.className = "hint";
   if (!/^[0-9a-f]{64}$/.test(pairing)) {
     status.className = "error";
-    status.textContent = "Paste the pairing code from the Windows companion window. Do not enter your Riot password or API key.";
+    status.textContent = "That is not a complete pairing code. Click Copy code in the open companion window and paste it here.";
     return;
   }
   const controller = new AbortController();
@@ -58,9 +58,16 @@ async function connectPersonalStore(event) {
       redirect: "error",
       signal: controller.signal
     });
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
+    if (response.status === 403 && typeof data?.error === "string" && data.error.startsWith("Pairing code")) {
+      disconnectPersonalStore();
+      status.className = "error";
+      status.textContent = "The running companion rejected this code. Click Copy code in its current window, paste the new code here, and reconnect.";
+      $("personal-pairing").focus();
+      return;
+    }
     if (!response.ok) throw new Error(typeof data?.error === "string" ? data.error : "The companion could not read your store.");
-    if (typeof data.account !== "string" || !Array.isArray(data.offers) || data.offers.length > 4
+    if (typeof data?.account !== "string" || !Array.isArray(data.offers) || data.offers.length > 4
       || !Number.isFinite(data.fetchedAt) || !Number.isFinite(Date.parse(data.expiresAt))
       || data.offers.some((o) => !o || typeof o.name !== "string" || !(o.price === null || (Number.isFinite(o.price) && o.price >= 0)))) {
       throw new Error("Unexpected companion response. Update your Windows companion and retry.");
@@ -75,7 +82,7 @@ async function connectPersonalStore(event) {
     if (personalRequest !== controller) return;
     status.className = "error";
     status.textContent = error.name === "TypeError" || error.name === "AbortError"
-      ? "Could not reach the companion. Keep its window open, allow local network access for Valtrack, and retry on the same PC."
+      ? "Valtrack could not reach the companion. Keep its window open on this PC and allow Local network access for this site in Chrome or Edge."
       : error.message;
     if (personalSnapshot) status.textContent += " Showing the previous snapshot; offers may have changed.";
   } finally {
