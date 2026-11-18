@@ -21,7 +21,7 @@ The four daily offers belong to the account signed into Riot Client, regardless 
 - Requires both the exact Valtrack origin and a randomly generated 256-bit pairing code.
 - Reads the Riot Client lockfile under your Windows LOCALAPPDATA folder only after an authenticated Connect/Refresh request.
 - Riot session credentials are sent only to the local Riot Client and Riot's fixed HTTPS player-data host. Redirects are rejected. No token is sent to GitHub, Cloudflare, the item catalog, or your browser.
-- Makes only GET requests to Riot; it cannot purchase items or change your account.
+- Uses Riot’s read-only storefront lookup and has no purchase or account-edit functions.
 - Item names, images and the client version come from the public valorant-api.com catalog, without Riot authentication headers.
 - Holds display data in memory only. Does not save credentials, pairing codes or personal offers to disk. Valtrack holds the pairing code and personal offers in page memory only, outside match exports and local storage.
 - The self-signed certificate exception is limited to Riot Client on `127.0.0.1`; remote HTTPS certificate validation remains enabled.

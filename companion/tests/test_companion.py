@@ -41,11 +41,12 @@ class CompanionTests(unittest.TestCase):
 
     def test_no_riot_credentials_in_returned_data_or_catalog_headers(self):
         calls = []
-        def fake(url, headers=None, local=False):
+        def fake(url, headers=None, local=False, *, body=None):
             calls.append((url, headers))
             if '/v1/version' in url:
                 return {'data': {'riotClientVersion': 'test-version'}}
-            if '/store/v2/storefront/' in url:
+            if '/store/v3/storefront/' in url:
+                self.assertEqual(body, b'{}')
                 return {'SkinsPanelLayout': PANEL}
             if '/weapons/skinlevels/' in url:
                 return {'data': {'displayName': 'Test skin', 'displayIcon': None}}
@@ -62,9 +63,9 @@ class CompanionTests(unittest.TestCase):
             if url.startswith('https://valorant-api.com/'):
                 self.assertIsNone(headers)
             else:
-                self.assertTrue(url.startswith('https://pd.eu.a.pvp.net/store/v2/storefront/'))
+                self.assertTrue(url.startswith('https://pd.eu.a.pvp.net/store/v3/storefront/'))
                 self.assertEqual(headers['Authorization'], 'Bearer fake-access-token')
-        self.assertEqual(len([url for url, _ in calls if '/store/v2/' in url]), 1)
+        self.assertEqual(len([url for url, _ in calls if '/store/v3/' in url]), 1)
 
     def test_http_pairing_origin_host_and_response(self):
         server = bridge.ThreadingHTTPServer(('127.0.0.1', 0), bridge.Handler)

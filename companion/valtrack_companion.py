@@ -32,7 +32,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None  # Never forward Riot credentials to a redirect destination.
 
 
-def request_json(url, headers=None, local=False):
+def request_json(url, headers=None, local=False, *, body=None):
     handlers = [NoRedirect()]
     if local:
         # Riot Client serves a self-signed certificate on loopback only.
@@ -41,13 +41,14 @@ def request_json(url, headers=None, local=False):
         handlers += [urllib.request.ProxyHandler({}),
                      urllib.request.HTTPSHandler(context=ssl._create_unverified_context())]
     opener = urllib.request.build_opener(*handlers)
-    req = urllib.request.Request(url, headers=headers or {}, method="GET")
+    req = urllib.request.Request(url, headers=headers or {}, data=body, method="POST" if body is not None else "GET")
     try:
         with opener.open(req, timeout=10) as response:
             return json.load(response)
     except urllib.error.HTTPError as error:
         if error.code in (401, 403):
-            raise CompanionError("Riot session was rejected. Open VALORANT, sign in again, and check the region.", 401) from None
+            stage = "Riot Client session" if local else "Riot storefront" if "/storefront/" in url else "Store data provider"
+            raise CompanionError(f"{stage} rejected the request (HTTP {error.code}).", 401) from None
         if error.code == 429:
             raise CompanionError("Riot asked us to slow down. Wait a minute and retry.", 429) from None
         raise CompanionError("Riot or the item catalog is unavailable. Try again later.") from None
@@ -149,7 +150,7 @@ class RiotStore:
                        "X-Riot-ClientVersion": version,
                        "X-Riot-ClientPlatform": base64.b64encode(json.dumps(platform).encode()).decode()}
             base = "https://pd." + shard + ".a.pvp.net"
-            storefront = request_json(base + "/store/v2/storefront/" + subject, headers)
+            storefront = request_json(base + "/store/v3/storefront/" + subject, {**headers, "Content-Type": "application/json"}, body=b"{}")
             prices = None
             if not isinstance(storefront.get("SkinsPanelLayout", {}).get("SingleItemStoreOffers"), list):
                 prices = request_json(base + "/store/v1/offers/", headers)
