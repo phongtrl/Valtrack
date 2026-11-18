@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.5", title: "Store cleanup", items: [
+    "Removed the experimental Personal daily offers section from Store.",
+  ] },
   { version: "4.4", title: "Freshness and match filters", items: [
     "Separate update times and loading/failure states for matches, rank, RR history and the featured store. Failed updates keep the previous successful timestamp.",
     "Filter the match log by map, agent, result and date range, or search saved player names. Match navigation follows the filtered log.",
