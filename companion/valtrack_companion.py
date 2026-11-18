@@ -240,26 +240,47 @@ def main():
     if os.name != "nt":
         print("Run this companion on your Windows gaming PC.")
         return 1
+    import tkinter as tk
+    from tkinter import messagebox, ttk
+
+    root = tk.Tk()
+    root.title("Valtrack personal store")
     try:
         server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     except OSError:
-        print("Port 8766 is unavailable. Close another running companion and retry.")
+        messagebox.showerror("Valtrack", "Port 8766 is unavailable. Close the other companion and retry.", parent=root)
+        root.destroy()
         return 1
+
     server.pairing = secrets.token_hex(32)
     server.riot_store = RiotStore()
-    print("Valtrack private store companion\n")
-    print("1. Sign into Riot Client and keep VALORANT open.")
-    print("2. Open https://phongtrl.github.io/Valtrack/ and go to Store.")
-    print("3. Paste this temporary pairing code into Personal daily offers:\n")
-    print(server.pairing)
-    print("\nChoose your Riot account's region and click Connect.")
-    print("Allow local network access if your browser asks.")
-    print("Keep this window open. Ctrl+C stops the companion and invalidates the code.")
+    panel = ttk.Frame(root, padding=20)
+    panel.pack(fill="both", expand=True)
+    ttk.Label(panel, text="Pair Valtrack on this PC").pack(anchor="w")
+    ttk.Label(panel, text="Keep VALORANT open. Paste the code in Store → Personal daily offers.").pack(anchor="w", pady=(4, 12))
+    code = tk.StringVar(value=server.pairing)
+    entry = ttk.Entry(panel, textvariable=code, state="readonly", width=68)
+    entry.pack(fill="x")
+    status = tk.StringVar()
+
+    def copy_code(event=None):
+        root.clipboard_clear()
+        root.clipboard_append(server.pairing)
+        status.set("Code copied. Paste it into Valtrack and click Connect.")
+        return "break"
+
+    entry.bind("<Control-c>", copy_code)
+    buttons = ttk.Frame(panel)
+    buttons.pack(fill="x", pady=(12, 0))
+    ttk.Button(buttons, text="Copy code", command=copy_code).pack(side="left")
+    ttk.Button(buttons, text="Stop companion", command=root.destroy).pack(side="right")
+    ttk.Label(panel, textvariable=status).pack(anchor="w", pady=(8, 0))
+    entry.focus_set()
+    threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
+        root.mainloop()
     finally:
+        server.shutdown()
         server.server_close()
     return 0
 
