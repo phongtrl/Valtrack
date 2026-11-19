@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.7", title: "Simpler navigation", items: [
+    "Performance groups Breakdown and Trends. Compare ranks is now under Friends.",
+  ] },
   { version: "4.6", title: "Session recap", items: [
     "Today shows your best match by ACS and how many ranked games have known RR. Download a PNG recap with an optional Riot ID.",
   ] },

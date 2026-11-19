@@ -97,6 +97,23 @@ function friendButton(f) {
   return b;
 }
 
+function friendActions(friend) {
+  const actions = el("div", "friend-actions");
+  actions.append(friendButton(friend));
+  if (friend.me) return actions;
+  const compare = el("button", "link", "Compare");
+  compare.type = "button";
+  compare.setAttribute("aria-label", `Compare ranks with ${friend.name}#${friend.tag}`);
+  compare.addEventListener("click", (event) => {
+    event.stopPropagation();
+    $("friends-compare").open = true;
+    $("friends-compare").querySelector("summary").focus();
+    runCompare(friend.name, friend.tag, friend.region);
+  });
+  actions.append(compare);
+  return actions;
+}
+
 function renderFriends() {
   const box = $("friends");
   if (!box || !account) return;
@@ -109,7 +126,7 @@ function renderFriends() {
     name: f.me ? `${f.name}#${f.tag} (you)` : `${f.name}#${f.tag}`,
     sub: friendLoading === friendKey(f) ? "Loading…" : d.at ? `Updated ${ago(Date.now() - d.at)}` : "Not loaded yet",
     badge: d.tierName && parseRank(d.tierName) ? rankBadge(d.tierName, 26) : undefined,
-    action: friendButton(f),
+    action: friendActions(f),
     onClick: f.me ? undefined : () => viewProfile(f),
     cells: [
       ["Rank", d.error || d.tierName || "—"],

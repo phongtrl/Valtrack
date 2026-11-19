@@ -567,3 +567,6 @@ dialog p { margin-bottom: 18px; }
   .match-filters { grid-template-columns: minmax(0, 1fr); }
   .match-search { grid-column: auto; }
 }
+
+.friend-actions { flex: none; display: grid; justify-items: center; font-size: .75rem; }
+#friends-compare > summary { cursor: pointer; font-weight: 500; }

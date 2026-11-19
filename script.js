@@ -902,11 +902,31 @@ function closeAccountMenu() {
 
 /* ---------- Tabs ---------- */
 
-const TABS = ["overview", "matches", "stats", "progress", "friends", "compare", "store"];
+const TABS = ["overview", "matches", "performance", "friends", "store"];
 
 let activeTab = null;
 
+function showPerformance(view) {
+  for (const name of ["breakdown", "trends"]) {
+    $("performance-" + name).setAttribute("aria-pressed", String(name === view));
+    $("performance-" + name + "-content").hidden = name !== view;
+  }
+  store.set("vt:performance-view", view);
+}
+
+for (const view of ["breakdown", "trends"]) {
+  $("performance-" + view).addEventListener("click", () => showPerformance(view));
+}
+
 function showTab(name, focus = false) {
+  if (name === "stats" || name === "progress") {
+    showPerformance(name === "progress" ? "trends" : "breakdown");
+    name = "performance";
+  }
+  if (name === "compare") {
+    $("friends-compare").open = true;
+    name = "friends";
+  }
   if (!TABS.includes(name)) name = "overview";
   const dir = activeTab === null || activeTab === name ? "" : TABS.indexOf(name) > TABS.indexOf(activeTab) ? "from-right" : "from-left";
   activeTab = name;
@@ -924,6 +944,7 @@ function showTab(name, focus = false) {
   });
   store.set(KEY_TAB, name);
   if (name === "friends") onFriendsTab();
+  if (name === "performance") showPerformance(store.get("vt:performance-view") === "trends" ? "trends" : "breakdown");
   if (shopTimer) { clearInterval(shopTimer); shopTimer = null; }
   $("mode-filter").parentElement.hidden = name === "store";
   if (name === "store") onStoreTab();
@@ -1462,6 +1483,7 @@ function renderCmpFavorites() {
 
 async function runCompare(name, tag, region) {
   if (!account) return;
+  $("friends-compare").open = true;
   cmpActive = lower(name) + "#" + lower(tag);
   renderCmpFavorites();
   $("cmp-error").textContent = "";

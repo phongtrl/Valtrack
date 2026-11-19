@@ -63,10 +63,8 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <nav class="tabs" role="tablist" aria-label="Sections">
           <button id="tabbtn-overview" class="tab" role="tab" type="button" aria-controls="tab-overview" aria-selected="true" data-tab="overview">Overview</button>
           <button id="tabbtn-matches" class="tab" role="tab" type="button" aria-controls="tab-matches" aria-selected="false" tabindex="-1" data-tab="matches">Matches</button>
-          <button id="tabbtn-stats" class="tab" role="tab" type="button" aria-controls="tab-stats" aria-selected="false" tabindex="-1" data-tab="stats">Stats</button>
-          <button id="tabbtn-progress" class="tab" role="tab" type="button" aria-controls="tab-progress" aria-selected="false" tabindex="-1" data-tab="progress">Progress</button>
+          <button id="tabbtn-performance" class="tab" role="tab" type="button" aria-controls="tab-performance" aria-selected="false" tabindex="-1" data-tab="performance">Performance</button>
           <button id="tabbtn-friends" class="tab" role="tab" type="button" aria-controls="tab-friends" aria-selected="false" tabindex="-1" data-tab="friends">Friends</button>
-          <button id="tabbtn-compare" class="tab" role="tab" type="button" aria-controls="tab-compare" aria-selected="false" tabindex="-1" data-tab="compare">Compare</button>
           <button id="tabbtn-store" class="tab" role="tab" type="button" aria-controls="tab-store" aria-selected="false" tabindex="-1" data-tab="store">Store</button>
         </nav>
         <div class="actions">
@@ -214,8 +212,12 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       </section>
     </div>
 
-    <!-- Stats: how you do per agent and map -->
-    <div id="tab-stats" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-stats" hidden>
+    <div id="tab-performance" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-performance" hidden>
+      <div class="chips" role="group" aria-label="Performance view">
+        <button id="performance-breakdown" class="chip" type="button" aria-controls="performance-breakdown-content" aria-pressed="true">Breakdown</button>
+        <button id="performance-trends" class="chip" type="button" aria-controls="performance-trends-content" aria-pressed="false">Trends</button>
+      </div>
+      <div id="performance-breakdown-content" class="stack">
       <div class="two">
         <section class="card pad"><h2>By agent</h2><div id="by-agent"></div></section>
         <section class="card pad"><h2>By map</h2><div id="by-map"></div></section>
@@ -262,8 +264,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       </section>
     </div>
 
-    <!-- Progress: trends over time and your rank goal -->
-    <div id="tab-progress" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-progress" hidden>
+      <div id="performance-trends-content" class="stack" hidden>
       <section>
         <h2>Trends</h2>
         <p id="charts-note" class="hint"></p>
@@ -288,6 +289,8 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       </section>
     </div>
 
+    </div>
+
     <!-- Friends: your favorites side by side -->
     <div id="tab-friends" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-friends" hidden>
       <section>
@@ -296,6 +299,22 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <p id="friends-status" class="hint" role="status" aria-live="polite"></p>
         <div id="friends"></div>
       </section>
+      <details id="friends-compare" class="card pad stack">
+        <summary>Compare ranks</summary>
+      <section>
+        <p class="hint">Roughly how many games it would take to catch up with another player.</p>
+        <div id="cmp-favorites"></div>
+        <p class="sub">Or enter a player</p>
+        <form id="cmp-form" class="id-form">
+          <label class="grow">Username <input id="cmp-name" placeholder="Username" autocomplete="off" spellcheck="false" required></label>
+          <label class="tag">Tag <input id="cmp-tag" placeholder="TAG" maxlength="5" autocomplete="off" spellcheck="false" required></label>
+          <button id="cmp-go" type="submit">Compare</button>
+        </form>
+        <p id="cmp-error" class="error" role="alert"></p>
+        <p class="hint">Only compare with players who have agreed that you can look up their match data.</p>
+      </section>
+      <div id="cmp-result" class="stack" aria-live="polite"></div>
+    </details>
     </div>
 
     <!-- Store: featured bundles -->
@@ -312,23 +331,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       </section>
     </div>
 
-    <!-- Compare: catch up with another player -->
-    <div id="tab-compare" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-compare" hidden>
-      <section>
-        <h2>Compare ranks</h2>
-        <p class="hint">Roughly how many games it would take to catch up with another player.</p>
-        <div id="cmp-favorites"></div>
-        <p class="sub">Or enter a player</p>
-        <form id="cmp-form" class="id-form">
-          <label class="grow">Username <input id="cmp-name" placeholder="Username" autocomplete="off" spellcheck="false" required></label>
-          <label class="tag">Tag <input id="cmp-tag" placeholder="TAG" maxlength="5" autocomplete="off" spellcheck="false" required></label>
-          <button id="cmp-go" type="submit">Compare</button>
-        </form>
-        <p id="cmp-error" class="error" role="alert"></p>
-        <p class="hint">Only compare with players who have agreed that you can look up their match data.</p>
-      </section>
-      <div id="cmp-result" class="stack" aria-live="polite"></div>
-    </div>
+
 
   </div>
 
@@ -367,10 +370,10 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
       <ul>
         <li><b>Overview:</b> win rate, record, K/D, ACS, current and peak rank, today's session and your recent form.</li>
         <li><b>Matches:</b> every match you have fetched. Filter by map, agent, result, dates or a saved player name. Press Details to see all players, damage, first bloods and who dominated who. Select a player there to open their profile or save them as a favorite.</li>
-        <li><b>Stats:</b> win rate and K/D per agent and map, the players you team up with, your servers, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, opening duels and trades, clutches and ability use.</li>
-        <li><b>Progress:</b> trend charts (hover or tap a dot for details), accuracy over time, rank history, a tilt check and a rank goal estimate.</li>
+        <li><b>Performance → Breakdown:</b> win rate and K/D per agent and map, the players you team up with, your servers, and your weapons: which you use most, which gets you the most kills per round, and which kills you most. It also shows attack and defence, economy, opening duels and trades, clutches and ability use.</li>
+        <li><b>Performance → Trends:</b> trend charts (hover or tap a dot for details), accuracy over time, rank history, a tilt check and a rank goal estimate.</li>
         <li><b>Store:</b> current featured bundles, item prices and expiry times.</li>
-        <li><b>Compare:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
+        <li><b>Friends → Compare ranks:</b> see how far you are from another player's rank and roughly how many games it takes to catch up.</li>
         <li>The <b>Game mode</b> selector at the top applies to every tab. It starts on Competitive.</li>
       </ul>
       <p class="note"><b>On a phone,</b> swipe left or right anywhere on the page to change tab.</p>
