@@ -170,7 +170,7 @@ function showWelcome() {
 }
 
 function openAccount(acc) {
-  account = acc;
+  account = { ...acc, region: acc.region || savedCopy(regionCacheKey(acc))?.v || null };
   store.set(KEY_ACCOUNT, JSON.stringify(account));
   matches = loadMatches();
   resetMatchFilters();
@@ -183,7 +183,7 @@ function openAccount(acc) {
   updateFavoriteButton();
   renderFavorites();
   render();
-  if (account.region) fetchRankStats(false, Infinity); // show the saved rank right away; the API is only asked if none is saved
+  void fetchRankStats(false, Infinity);
 }
 
 function setStatus(message, isError = false) {
@@ -236,18 +236,21 @@ async function api(path) {
   return json;
 }
 
+const regionCacheKey = ({ name, tag }) => `region:${lower(name)}#${lower(tag)}`;
+
 async function lookupRegion(name = account.name, tag = account.tag) {
-  try {
-    return await cached(`region:${lower(name)}#${lower(tag)}`, 30 * DAY, async () => {
-      const json = await api(`/valorant/v2/account/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`);
-      const region = json.data && json.data.region;
-      if (!region) throw new Error("No region in the response");
-      return region;
-    });
-  } catch (e) {
-    if ([401, 403, 404, 429].includes(e.status)) throw e;
-    return "eu"; // best guess when the lookup is unavailable; not saved
-  }
+  return cached(regionCacheKey({ name, tag }), 30 * DAY, async () => {
+    const json = await api(`/valorant/v2/account/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`);
+    const region = json.data?.region;
+    if (!region) throw new Error("Could not find the region for this Riot ID.");
+    return region;
+  });
+}
+
+async function resolveProfileRegion(owner) {
+  if (!owner.region) owner.region = await lookupRegion(owner.name, owner.tag);
+  if (account === owner) store.set(KEY_ACCOUNT, JSON.stringify(owner));
+  return owner.region;
 }
 
 const playerKey = (p) => String(p?.puuid || `${lower(p?.name)}#${lower(p?.tag)}`);
@@ -630,6 +633,8 @@ async function fetchRankStats(force = false, maxAge = FRESH_MS) {
   const peakNode = $("rank-peak");
   const rrNode = $("rank-rr");
   $("rank-panel").classList.add("rank-loading");
+  $("rank-current-icon").replaceChildren();
+  $("rank-peak-icon").replaceChildren();
   currentNode.textContent = "Loading…";
   peakNode.textContent = "Loading…";
   rrNode.textContent = "—";
@@ -637,7 +642,10 @@ async function fetchRankStats(force = false, maxAge = FRESH_MS) {
   $("rank-peak-season").textContent = "All-time peak reported by API";
   $("rank-rr-note").textContent = "Ranked rating";
   try {
-    const data = await fetchMmr(account.name, account.tag, account.region, force, maxAge);
+    const cachedRank = savedCopy(`mmr:${lower(owner.name)}#${lower(owner.tag)}`);
+    const data = !force && cachedRank?.v && Date.now() - cachedRank.t < maxAge
+      ? cachedRank.v
+      : await fetchMmr(owner.name, owner.tag, await resolveProfileRegion(owner), force, maxAge);
     if (account !== owner) return false;
     const snapshot = savedCopy(`mmr:${lower(owner.name)}#${lower(owner.tag)}`);
     if (snapshot?.t) markFetched("rank", snapshot.t);
@@ -728,7 +736,7 @@ function spinBriefly(ms = 700) {
 // One mmr request instead of a full match sync.
 async function refreshRank() {
   const button = $("rank-refresh");
-  if (syncing || button.disabled || !account.region) return;
+  if (syncing || button.disabled || !account) return;
   const age = Date.now() - lastFetched("rank");
   if (age < COOLDOWN_MS) {
     button.classList.add("is-loading");
@@ -740,17 +748,23 @@ async function refreshRank() {
   button.classList.add("is-loading");
   button.setAttribute("aria-busy", "true");
   setStatus("Fetching your rank from HenrikDev…");
-  await fetchRankStats(true);
-  await fetchRrHistory(true);
-  render();
-  const failed = $("rank-current").textContent === "Unavailable";
-  const rrFailed = dataStates.get(freshnessOwner() + ":rr")?.state === "error";
-  setStatus(failed ? "Could not load your rank."
-    : rrFailed ? "Rank updated, but RR history could not be refreshed."
-      : "Current rank, peak rank and RR updated.", failed || rrFailed);
-  button.disabled = false;
-  button.classList.remove("is-loading");
-  button.setAttribute("aria-busy", "false");
+  const owner = account;
+  try {
+    await fetchRankStats(true);
+    if (account !== owner) return;
+    if (owner.region) await fetchRrHistory(true);
+    if (account !== owner) return;
+    render();
+    const failed = $("rank-current").textContent === "Unavailable";
+    const rrFailed = dataStates.get(freshnessOwner() + ":rr")?.state === "error";
+    setStatus(failed ? "Could not load your rank."
+      : rrFailed ? "Rank updated, but RR history could not be refreshed."
+        : "Current rank, peak rank and RR updated.", failed || rrFailed);
+  } finally {
+    button.disabled = false;
+    button.classList.remove("is-loading");
+    button.setAttribute("aria-busy", "false");
+  }
 }
 
 async function syncMatches(manual = true) {
@@ -772,11 +786,9 @@ async function syncMatches(manual = true) {
   const syncOwner = account;
   setDataState("matches", "loading");
   try {
-    if (!account.region) {
-      account.region = await lookupRegion();
-      store.set(KEY_ACCOUNT, JSON.stringify(account));
-    }
-    const who = account;
+    await resolveProfileRegion(syncOwner);
+    if (account !== syncOwner) return;
+    const who = syncOwner;
     const rows = await fetchActMatches(new Set(matches.map((m) => String(m.id))));
     if (account !== who) return; // another profile was opened meanwhile
     if (!rows.length) {
@@ -809,7 +821,7 @@ async function syncMatches(manual = true) {
       : `No new matches since the last fetch. ${matches.length} total saved.`);
   } catch (e) {
     if (account === syncOwner) setDataState("matches", "error", e.message || "Match refresh failed.");
-    setStatus(e.message || "Fetch failed. Check your API key and Riot ID.", true);
+    if (account === syncOwner) setStatus(e.message || "Fetch failed. Check the Riot ID.", true);
   } finally {
     // Rank and RR only change after a ranked match, so the saved copies are reused (up to a day) unless one was just added.
     if (account === syncOwner && account.region) {
@@ -1710,15 +1722,13 @@ const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
 // One request for a single match, to fill in player details or rounds that were not saved before.
 async function loadFullMatch(id) {
-  const owner = matchKey();
-  if (!account.region) {
-    account.region = await lookupRegion();
-    store.set(KEY_ACCOUNT, JSON.stringify(account));
-  }
-  const json = await api(`/valorant/v4/match/${encodeURIComponent(account.region)}/${encodeURIComponent(id)}`);
+  const owner = account;
+  const region = await resolveProfileRegion(owner);
+  if (account !== owner) return;
+  const json = await api(`/valorant/v4/match/${encodeURIComponent(region)}/${encodeURIComponent(id)}`);
+  if (account !== owner) return;
   const parsed = parseMatch(json?.data);
   if (!parsed) throw new Error("HenrikDev couldn't return this match. Try again later.");
-  if (matchKey() !== owner) return; // the account changed while loading
   if (!parsed.timeline) parsed.timeline = []; // remembered as empty, so it isn't requested again
   matches = sortMatches(matches.map((x) => (String(x.id) === String(id) ? parsed : x)));
   saveMatches();

@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.8", title: "Profile memory", items: [
+    "Switching profiles restores saved rank and RR alongside match history. Valtrack remembers each Riot ID’s region and looks it up when needed.",
+  ] },
   { version: "4.7", title: "Simpler navigation", items: [
     "Performance groups Breakdown and Trends. Compare ranks is now under Friends.",
   ] },
