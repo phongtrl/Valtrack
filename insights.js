@@ -70,16 +70,80 @@ function renderSession(view) {
     box.append(el("p", "muted", view.length ? `No matches today. Last played ${view[0].date}.` : "No matches yet."));
   } else {
     const s = summarize(played);
-    const change = rrHistory.filter((h) => localDay(h.time) === today).reduce((t, h) => t + h.change, 0);
+    const competitive = played.filter((m) => /compet/i.test(m.mode));
+    const changes = competitive.map(matchRr).filter(Number.isFinite);
+    const net = changes.reduce((total, change) => total + change, 0);
+    const record = `${s.wins} W · ${s.losses} L${s.draws ? ` · ${s.draws} D` : ""}`;
+    const rr = changes.length ? rrLabel(net) : "RR unavailable";
+    const coverage = competitive.length ? `Known RR for ${changes.length} of ${competitive.length} ranked games` : "No ranked games in this view";
+    const best = played.reduce((top, match) => match.acs > top.acs ? match : top);
+    const bestLine = `${best.agent} on ${best.map} · ${best.acs} ACS`;
     const line = el("div", "session-main");
-    line.append(el("b", "", `${s.wins} W – ${s.losses} L${s.draws ? ` – ${s.draws} D` : ""}`), el("span", "", `K/D ${s.kd.toFixed(2)}`), el("span", "", `ACS ${Math.round(s.acs)}`));
-    if (rrHistory.length) line.append(el("span", change >= 0 ? "r-win" : "r-loss", `${change > 0 ? "+" : ""}${change} RR`));
-    box.append(line);
+    line.append(el("b", "", record), el("span", "", `K/D ${s.kd.toFixed(2)}`), el("span", "", `ACS ${Math.round(s.acs)}`), el("span", "", rr));
+    const review = el("button", "link", bestLine);
+    review.type = "button";
+    review.addEventListener("click", () => openMatch(best.id));
+    const bestMatch = el("p", "hint", "Best match by ACS · ");
+    bestMatch.append(review);
+    const privacy = el("label", "consent");
+    const includeId = el("input");
+    includeId.type = "checkbox";
+    privacy.append(includeId, el("span", "", "Include Riot ID on the card"));
+    const save = el("button", "quiet small", "Download recap PNG");
+    save.type = "button";
+    const status = el("p", "hint");
+    status.setAttribute("role", "status");
+    save.addEventListener("click", () => {
+      const player = includeId.checked ? `${account.name}#${account.tag}` : "";
+      downloadSessionCard({ today, record, rr, coverage, bestLine, player, mode: $("mode-filter").selectedOptions[0].textContent }, status);
+    });
+    box.append(line, el("p", "hint", coverage), bestMatch, privacy, save, status);
   }
   let streak = 0;
   while (streak < view.length && view[streak].result === view[0].result) streak++;
   if (view.length && view[0].result === "loss" && streak >= 3) box.append(el("p", "note warn", `You have lost ${streak} in a row. A short break can help.`));
   if (view.length && view[0].result === "win" && streak >= 4) box.append(el("p", "note", `${streak} wins in a row.`));
+}
+
+function downloadSessionCard(recap, status) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1000;
+  canvas.height = 560;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    status.textContent = "PNG export is unavailable in this browser.";
+    return;
+  }
+  ctx.fillStyle = "#23251f";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#b79b6e";
+  ctx.fillRect(52, 52, 52, 5);
+  const rows = [
+    [24, 95, "VALTRACK"],
+    [52, 165, "Today’s session"],
+    [22, 210, `${recap.today} · ${recap.mode}${recap.player ? ` · ${recap.player}` : ""}`],
+    [42, 296, `${recap.record}    /    ${recap.rr}`],
+    [22, 342, recap.coverage],
+    [22, 431, "Best match by ACS"],
+    [32, 477, recap.bestLine]
+  ];
+  ctx.fillStyle = "#f2efe8";
+  for (const [size, y, text] of rows) {
+    ctx.font = `${size}px system-ui, sans-serif`;
+    ctx.fillText(text, 52, y, 896);
+  }
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      status.textContent = "Could not create the recap PNG.";
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = el("a");
+    link.href = url;
+    link.download = `valtrack-recap-${recap.today}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, "image/png");
 }
 
 /* ---------- Highlights ---------- */

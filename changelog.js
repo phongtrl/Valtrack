@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.6", title: "Session recap", items: [
+    "Today shows your best match by ACS and how many ranked games have known RR. Download a PNG recap with an optional Riot ID.",
+  ] },
   { version: "4.5", title: "Store cleanup", items: [
     "Removed the experimental Personal daily offers section from Store.",
   ] },
