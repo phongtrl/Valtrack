@@ -59,7 +59,7 @@ function filterMatchLog(list) {
   if (f.since && f.until && f.since > f.until) return [];
   return list.filter((m) => {
     if (f.map && m.map !== f.map || f.agent && m.agent !== f.agent || f.result && m.result !== f.result) return false;
-    const date = String(m.date || "").slice(0, 10);
+    const date = localDateInput(new Date(matchTime(m)));
     if (f.since && date < f.since || f.until && date > f.until) return false;
     if (!query) return true;
     const players = Array.isArray(m.details?.players) ? m.details.players : [];
@@ -91,5 +91,65 @@ function initEnhancements() {
     resetMatchFilters();
     renderLog(scope());
   });
+  document.querySelectorAll("[data-match-preset]").forEach((button) => {
+    button.addEventListener("click", () => applyMatchPreset(button.dataset.matchPreset));
+  });
   setInterval(renderFreshness, 60000);
+}
+
+
+const RECENT_PROFILE_KEY = "vt:recent-profiles";
+
+function getRecentProfiles() {
+  try {
+    const profiles = JSON.parse(store.get(RECENT_PROFILE_KEY) || "[]");
+    return Array.isArray(profiles) ? profiles.filter((p) => typeof p?.name === "string" && typeof p?.tag === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberRecentProfile(profile) {
+  const recent = getRecentProfiles().filter((other) => !sameId(other, profile));
+  store.set(RECENT_PROFILE_KEY, JSON.stringify([profile, ...recent].slice(0, 12)));
+}
+
+function renderRecentProfiles(favorites) {
+  const list = $("recent-profile-list");
+  list.replaceChildren();
+  const recent = getRecentProfiles().filter((p) => (!account || !sameId(account, p)) && !favorites.some((f) => sameId(f, p))).slice(0, 5);
+  $("recent-profiles").hidden = recent.length === 0;
+  for (const profile of recent) {
+    const rank = savedCopy(`mmr:${lower(profile.name)}#${lower(profile.tag)}`)?.v?.current;
+    const button = el("button", "menu-item");
+    button.type = "button";
+    button.append(el("span", "", `${profile.name}#${profile.tag}`));
+    const tier = rank?.tier?.name || rank?.tier?.name_short;
+    if (tier) button.append(el("small", "", Number.isFinite(rank.rr) ? `${tier} · ${rank.rr} RR` : tier));
+    button.addEventListener("click", () => {
+      closeAccountMenu();
+      openAccount(profile);
+    });
+    list.append(button);
+  }
+}
+
+function localDateInput(date) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function applyMatchPreset(preset) {
+  if (preset === "losses") {
+    matchFilters.result = "loss";
+    $("match-result").value = "loss";
+  } else {
+    const end = new Date();
+    const start = new Date(end);
+    if (preset === "week") start.setDate(start.getDate() - 6);
+    matchFilters.since = $("match-since").value = localDateInput(start);
+    matchFilters.until = $("match-until").value = localDateInput(end);
+  }
+  logPage = 0;
+  renderLog(scope());
 }

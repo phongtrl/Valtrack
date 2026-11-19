@@ -873,7 +873,40 @@ function bindInsights() {
   });
 }
 
+function renderPerformanceComparison() {
+  const box = $("performance-comparison");
+  box.replaceChildren();
+  const ranked = sortMatches(matches.filter((match) => /^competitive$/i.test(match.mode)));
+  const recent = summarize(ranked.slice(0, 20));
+  const previous = summarize(ranked.slice(20, 40));
+  if (!recent.n) {
+    box.append(el("p", "hint", "Load competitive matches to see your performance."));
+    return;
+  }
+  const metrics = [
+    ["Win rate", "winRate", 100, 1, "%", " pp"],
+    ["K/D", "kd", 1, 2, "", ""],
+    ["ACS", "acs", 1, 1, "", ""]
+  ];
+  const nowLabel = `Latest (${recent.n})`;
+  const beforeLabel = `Previous (${previous.n})`;
+  const rows = metrics.map(([name, key, scale, digits, unit, deltaUnit]) => {
+    const now = recent[key] * scale;
+    const before = previous[key] * scale;
+    const delta = Number((now - before).toFixed(digits));
+    return { name, cells: [
+      [nowLabel, now.toFixed(digits) + unit],
+      [beforeLabel, previous.n ? before.toFixed(digits) + unit : "—"],
+      ["Change", previous.n ? `${delta > 0 ? "+" : ""}${delta.toFixed(digits)}${deltaUnit}` : "—"]
+    ] };
+  });
+  box.append(statTable(["Metric", nowLabel, beforeLabel, "Change"], rows, colsFor(3)));
+  if (!previous.n) box.append(el("p", "hint", "Save at least 21 competitive matches to compare periods."));
+  else if (previous.n < 20) box.append(el("p", "hint", "The previous period has fewer than 20 saved matches."));
+}
+
 function renderInsights(view) {
+  renderPerformanceComparison();
   renderSession(view);
   renderHighlights(view);
   renderCharts(view);

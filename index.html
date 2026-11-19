@@ -76,6 +76,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
             <div id="account-menu" class="menu card" hidden>
               <p class="menu-heading">Switch profile</p>
               <div id="favorites-switch-list" class="menu-list"></div>
+              <section id="recent-profiles" hidden><p class="menu-heading">Recent profiles</p><div id="recent-profile-list" class="menu-list"></div></section>
               <p class="menu-heading">Add another account</p>
               <form id="switch-account-form" class="menu-form">
                 <label class="grow">Username <input id="switch-riot-name" autocomplete="off" spellcheck="false" required></label>
@@ -179,6 +180,11 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <div class="section-head">
           <h2>Match log</h2>
         </div>
+        <div class="chips" role="group" aria-label="Quick match filters">
+          <button class="chip" type="button" data-match-preset="today">Today</button>
+          <button class="chip" type="button" data-match-preset="week">Last 7 days</button>
+          <button class="chip" type="button" data-match-preset="losses">Losses</button>
+        </div>
         <form id="match-filter-form" class="match-filters card pad" aria-label="Match filters">
           <label>Map<select id="match-map"><option value="">All maps</option></select></label>
           <label>Agent<select id="match-agent"><option value="">All agents</option></select></label>
@@ -265,6 +271,10 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
     </div>
 
       <div id="performance-trends-content" class="stack" hidden>
+        <section class="card pad">
+          <h2>Competitive performance</h2>
+          <div id="performance-comparison"></div>
+        </section>
       <section>
         <h2>Trends</h2>
         <p id="charts-note" class="hint"></p>

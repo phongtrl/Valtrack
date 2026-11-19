@@ -172,6 +172,7 @@ function showWelcome() {
 function openAccount(acc) {
   account = { ...acc, region: acc.region || savedCopy(regionCacheKey(acc))?.v || null };
   store.set(KEY_ACCOUNT, JSON.stringify(account));
+  rememberRecentProfile(account);
   matches = loadMatches();
   resetMatchFilters();
   rankNow = null;
@@ -873,6 +874,7 @@ function renderFavorites() {
   renderCmpFavorites();
   if (activeTab === "friends") onFriendsTab();
   const favorites = getFavorites();
+  renderRecentProfiles(favorites);
   const panel = $("favorites-panel");
   const welcomeList = $("favorites-list");
   if (panel && welcomeList) {
