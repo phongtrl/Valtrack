@@ -570,3 +570,38 @@ dialog p { margin-bottom: 18px; }
 
 .friend-actions { flex: none; display: grid; justify-items: center; font-size: .75rem; }
 #friends-compare > summary { cursor: pointer; font-weight: 500; }
+
+/* Overview hierarchy and review layouts */
+.rank-panel { grid-template-columns: 1.35fr 1fr .85fr; }
+#rank-current, #rank-rr { font-size: clamp(1.65rem, 4vw, 2.65rem); }
+#rank-peak { font-size: 1.15rem; }
+.rank-card:has(#rank-current) { border-color: var(--wood); }
+.advanced-match-filters { margin-top: 12px; }
+.advanced-match-filters summary, .shop-bundle-items summary { cursor: pointer; width: fit-content; font-weight: 600; }
+#active-match-filters:not(:empty) { margin-top: 10px; }
+#active-match-filters .chip { max-width: 100%; overflow-wrap: anywhere; }
+.match-row { --match-marker: var(--line); }
+.match-win { --match-marker: var(--win); }
+.match-loss { --match-marker: var(--loss); }
+.match-row > td:first-child { box-shadow: inset 3px 0 var(--match-marker); padding-left: 12px; }
+.match-location small { display: block; }
+.match-row [data-label="RR"], .match-row [data-label="Score"] { min-width: 5.5rem; font-variant-numeric: tabular-nums; }
+.performance-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 12px; margin-top: 12px; }
+.performance-metric { padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.performance-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.performance-value strong { font-size: 1.35rem; }
+.shop-banner { aspect-ratio: 2.35; }
+.shop-bundle-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.shop-bundle-meta .hint { margin: 0; }
+.shop-bundle-items { margin-top: 16px; }
+@media (max-width: 640px) {
+  .rank-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rank-card { padding: 12px; gap: 8px; }
+  .rank-card:has(#rank-peak) { grid-column: 1 / -1; }
+  .rank-card:has(#rank-rr) { grid-column: 2; grid-row: 1; }
+  #log .match-row { grid-template-columns: repeat(3, minmax(0, 1fr)); border-inline-start: 3px solid var(--match-marker); }
+  .match-row > td:first-child { box-shadow: none; padding-left: 0; }
+  .match-row [data-label="Result"] { grid-area: 1 / 1; }
+  .match-row [data-label="Score"] { grid-area: 1 / 2; min-width: 0; }
+  .match-row [data-label="RR"] { grid-area: 1 / 3; min-width: 0; }
+}

@@ -888,19 +888,24 @@ function renderPerformanceComparison() {
     ["K/D", "kd", 1, 2, "", ""],
     ["ACS", "acs", 1, 1, "", ""]
   ];
-  const nowLabel = `Latest (${recent.n})`;
-  const beforeLabel = `Previous (${previous.n})`;
-  const rows = metrics.map(([name, key, scale, digits, unit, deltaUnit]) => {
+  box.append(el("p", "hint", `Latest: ${recent.n} matches · Previous: ${previous.n} matches`));
+  const cards = el("div", "performance-metrics");
+  for (const [name, key, scale, digits, unit, deltaUnit] of metrics) {
     const now = recent[key] * scale;
     const before = previous[key] * scale;
     const delta = Number((now - before).toFixed(digits));
-    return { name, cells: [
-      [nowLabel, now.toFixed(digits) + unit],
-      [beforeLabel, previous.n ? before.toFixed(digits) + unit : "—"],
-      ["Change", previous.n ? `${delta > 0 ? "+" : ""}${delta.toFixed(digits)}${deltaUnit}` : "—"]
-    ] };
-  });
-  box.append(statTable(["Metric", nowLabel, beforeLabel, "Change"], rows, colsFor(3)));
+    const card = el("div", "performance-metric");
+    const value = el("div", "performance-value");
+    value.append(el("strong", "", now.toFixed(digits) + unit));
+    if (previous.n) {
+      const direction = delta > 0 ? "↑ " : delta < 0 ? "↓ " : "";
+      value.append(el("span", delta > 0 ? "r-win" : delta < 0 ? "r-loss" : "muted", direction + Math.abs(delta).toFixed(digits) + deltaUnit));
+    }
+    card.append(el("span", "muted", name), value);
+    if (previous.n) card.append(el("small", "muted", `Previously ${before.toFixed(digits)}${unit}`));
+    cards.append(card);
+  }
+  box.append(cards);
   if (!previous.n) box.append(el("p", "hint", "Save at least 21 competitive matches to compare periods."));
   else if (previous.n < 20) box.append(el("p", "hint", "The previous period has fewer than 20 saved matches."));
 }

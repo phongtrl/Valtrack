@@ -153,3 +153,28 @@ function applyMatchPreset(preset) {
   logPage = 0;
   renderLog(scope());
 }
+
+
+function renderActiveMatchFilters() {
+  const box = $("active-match-filters");
+  const focused = box.contains(document.activeElement) ? document.activeElement.dataset.filter : null;
+  box.replaceChildren();
+  const labels = { map: "Map", agent: "Agent", result: "Result", since: "From", until: "Through", query: "Search" };
+  for (const [key, value] of Object.entries(matchFilters)) {
+    if (!value) continue;
+    const chip = el("button", "chip", `${labels[key]}: ${value} ×`);
+    chip.type = "button";
+    chip.dataset.filter = key;
+    chip.setAttribute("aria-label", `Remove ${labels[key]} filter: ${value}`);
+    chip.addEventListener("click", () => {
+      matchFilters[key] = $("match-" + key).value = "";
+      logPage = 0;
+      renderLog(scope());
+    });
+    box.append(chip);
+  }
+  if (focused) {
+    const target = [...box.children].find((chip) => chip.dataset.filter === focused);
+    (target || box.firstElementChild || document.querySelector(".advanced-match-filters summary")).focus();
+  }
+}

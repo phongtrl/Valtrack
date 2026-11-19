@@ -1287,6 +1287,7 @@ function rrClass(change) {
 }
 
 function renderLog(visibleMatches) {
+  renderActiveMatchFilters();
   visibleMatches = filterMatchLog(visibleMatches);
   $("match-filter-note").textContent = matchFilters.since && matchFilters.until && matchFilters.since > matchFilters.until
     ? "Choose an end date on or after the start date."
@@ -1311,11 +1312,11 @@ function renderLog(visibleMatches) {
     ? `${label}${shown.length ? `, showing ${from + 1}–${from + shown.length}` : ""}. ${matches.length} saved on this device in all modes.`
     : "Your saved matches will appear here.";
   shown.forEach((m) => {
-    const tr = el("tr");
+    const tr = el("tr", "match-row match-" + m.result);
     const change = matchRr(m);
     const kd = m.deaths ? m.kills / m.deaths : m.kills;
     [
-      ["Date", m.date], ["Mode", m.mode], ["Map", m.map], ["Agent", m.agent],
+      ["Date", m.date], ["Mode", m.mode], ["Map / Agent", m.map, "match-location"],
       ["Result", m.result[0].toUpperCase() + m.result.slice(1), "r-" + m.result],
       ["RR", rrLabel(change), rrClass(change)],
       ["Score", `${m.roundsWon} – ${m.roundsLost}`],
@@ -1323,6 +1324,7 @@ function renderLog(visibleMatches) {
       ["K/D", kd.toFixed(2)], ["ACS", m.acs],
     ].forEach(([label, value, cls]) => {
       const td = el("td", cls || "", String(value ?? ""));
+      if (label === "Map / Agent") td.append(el("small", "muted", m.agent));
       td.dataset.label = label;
       tr.append(td);
     });

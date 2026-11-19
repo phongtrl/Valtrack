@@ -132,21 +132,6 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
     </div>
     <!-- Overview: the numbers that matter at a glance -->
     <div id="tab-overview" class="panel stack" role="tabpanel" aria-labelledby="tabbtn-overview">
-      <div class="hero card">
-        <svg class="enso" viewBox="0 0 160 160" role="img" aria-label="Win rate">
-          <circle class="track" cx="80" cy="80" r="70"></circle>
-          <circle id="ring" class="arc" cx="80" cy="80" r="70" stroke-dasharray="0 440"></circle>
-          <text id="ring-pct" x="80" y="88" text-anchor="middle" font-size="30">0%</text>
-          <text x="80" y="108" text-anchor="middle" font-size="9" class="ring-label">win rate</text>
-        </svg>
-        <div class="stats">
-          <div class="stat"><b id="s-matches">0</b><span>Matches</span></div>
-          <div class="stat"><b id="s-record">0 – 0</b><span>Wins and losses</span></div>
-          <div class="stat"><b id="s-kd">0.00</b><span>K/D ratio</span></div>
-          <div class="stat"><b id="s-acs">0</b><span>Average combat score</span></div>
-        </div>
-      </div>
-
       <section>
       <div class="section-head rank-head">
         <h2>Competitive rank</h2>
@@ -167,6 +152,21 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         <section class="card pad"><h2>Highlights</h2><ul id="insight-list" class="insight-list"></ul></section>
       </div>
 
+      <div class="hero card">
+        <svg class="enso" viewBox="0 0 160 160" role="img" aria-label="Win rate">
+          <circle class="track" cx="80" cy="80" r="70"></circle>
+          <circle id="ring" class="arc" cx="80" cy="80" r="70" stroke-dasharray="0 440"></circle>
+          <text id="ring-pct" x="80" y="88" text-anchor="middle" font-size="30">0%</text>
+          <text x="80" y="108" text-anchor="middle" font-size="9" class="ring-label">win rate</text>
+        </svg>
+        <div class="stats">
+          <div class="stat"><b id="s-matches">0</b><span>Matches</span></div>
+          <div class="stat"><b id="s-record">0 – 0</b><span>Wins and losses</span></div>
+          <div class="stat"><b id="s-kd">0.00</b><span>K/D ratio</span></div>
+          <div class="stat"><b id="s-acs">0</b><span>Average combat score</span></div>
+        </div>
+      </div>
+
       <section>
         <h2>Recent form</h2>
         <div id="strip" class="strip" aria-label="Last 20 matches"></div>
@@ -185,6 +185,9 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
           <button class="chip" type="button" data-match-preset="week">Last 7 days</button>
           <button class="chip" type="button" data-match-preset="losses">Losses</button>
         </div>
+        <div id="active-match-filters" class="chips" aria-label="Active filters"></div>
+        <details class="advanced-match-filters">
+          <summary>Filters</summary>
         <form id="match-filter-form" class="match-filters card pad" aria-label="Match filters">
           <label>Map<select id="match-map"><option value="">All maps</option></select></label>
           <label>Agent<select id="match-agent"><option value="">All agents</option></select></label>
@@ -194,6 +197,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
           <label class="match-search">Search<input id="match-query" type="search" placeholder="Player name#tag, map or agent" autocomplete="off"></label>
           <button id="match-clear" class="quiet" type="button">Clear filters</button>
         </form>
+        </details>
         <p id="match-filter-note" class="hint" role="status"></p>
         <p id="log-count" class="hint" aria-live="polite"></p>
         <p class="hint">RR applies to Competitive matches in your saved RR history. A dash means no RR record is available.</p>
@@ -205,7 +209,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
         </nav>
         <div class="table-wrap card">
           <table>
-            <thead><tr><th>Date</th><th>Mode</th><th>Map</th><th>Agent</th><th>Result</th><th>RR</th><th>Score</th><th>K / D / A</th><th>K/D</th><th>ACS</th><th aria-label="Details"></th></tr></thead>
+            <thead><tr><th>Date</th><th>Mode</th><th>Map / Agent</th><th>Result</th><th>RR</th><th>Score</th><th>K / D / A</th><th>K/D</th><th>ACS</th><th aria-label="Details"></th></tr></thead>
             <tbody id="log"></tbody>
           </table>
         </div>

@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.10", title: "Clearer layouts", items: [
+    "Rank leads Overview, Matches has compact rows and removable filter chips, Trends puts changes beside each metric, and Store bundles open to show their items.",
+  ] },
   { version: "4.9", title: "Profile shortcuts and match review", items: [
     "Switch to recent profiles from Account, apply quick match filters, and compare your latest 20 competitive matches with the previous 20 in Trends.",
   ] },

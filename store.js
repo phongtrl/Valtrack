@@ -57,6 +57,7 @@ function updateShopCountdowns() {
 
 function renderShop() {
   const box = $("store-bundles");
+  const expanded = new Set([...box.querySelectorAll("details[open]")].map((details) => details.dataset.bundle));
   box.replaceChildren();
   if (!shopSnapshot) return;
   if (!shopSnapshot.bundles.length) box.append(el("p", "empty", "No featured bundles are available right now."));
@@ -66,15 +67,17 @@ function renderShop() {
     if (image) card.append(image);
     const content = el("div", "shop-content");
     const head = el("div", "section-head shop-bundle-head");
-    head.append(el("h3", "", bundle.name || "Featured bundle"), el("strong", "shop-price", shopPrice(bundle.bundle_price)));
+    const meta = el("div", "shop-bundle-meta");
+    meta.append(el("strong", "shop-price", shopPrice(bundle.bundle_price)));
+    head.append(el("h3", "", bundle.name || "Featured bundle"), meta);
     content.append(head);
     const expiry = shopExpiry(bundle);
     if (expiry !== null) {
       const clock = el("p", "hint shop-expiry");
       clock.dataset.shopExpires = String(expiry);
       clock.title = `Ends ${new Date(expiry).toLocaleString()}`;
-      content.append(clock);
-    } else content.append(el("p", "hint", "Expiry unavailable"));
+      meta.append(clock);
+    } else meta.append(el("p", "hint", "Expiry unavailable"));
     if (bundle.whole_sale_only) content.append(el("p", "hint", "Sold as a complete bundle only."));
     const grid = el("div", "shop-items");
     bundle.items.forEach((item) => {
@@ -93,7 +96,13 @@ function renderShop() {
       if (Number(item.amount) > 1) tile.append(el("small", "muted", `Quantity: ${item.amount}`));
       grid.append(tile);
     });
-    content.append(grid);
+    if (grid.children.length) {
+      const details = el("details", "shop-bundle-items");
+      details.dataset.bundle = bundle.bundle_uuid;
+      details.open = expanded.has(details.dataset.bundle);
+      details.append(el("summary", "", `Bundle items (${grid.children.length})`), grid);
+      content.append(details);
+    }
     card.append(content);
     box.append(card);
   });
