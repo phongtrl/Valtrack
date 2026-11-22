@@ -56,7 +56,7 @@ function reviewMatchEl(match) {
 }
 
 function matchKillCoordinates(kill) {
-  const location = kill?.victim_death_location ?? kill?.victim_location ?? kill?.victimLocation ?? kill?.victim?.location ?? kill?.victim?.death_location;
+  const location = kill?.location ?? kill?.victim_death_location ?? kill?.victim_location ?? kill?.victimLocation ?? kill?.victim?.location ?? kill?.victim?.death_location;
   return Number.isFinite(location?.x) && Number.isFinite(location?.y) ? [location.x, location.y] : [];
 }
 
