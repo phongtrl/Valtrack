@@ -80,7 +80,7 @@ function loadMapCatalog() {
 function killMapEl(match, timeline) {
   const section = el("details", "card pad kill-map");
   section.open = true;
-  section.append(el("summary", "", "Kill and death heatmap"));
+  section.append(el("summary", "", "Fight map"));
   const mine = match.details.players.findIndex(isMine);
   const points = [];
   match.timeline?.forEach((round, i) => {
@@ -121,38 +121,70 @@ function killMapEl(match, timeline) {
       heat.width = heat.height = 240;
       heat.setAttribute("aria-hidden", "true");
       plot.append(image, heat);
-      const controls = el("label", "", "Side");
-      const side = el("select");
-      for (const [value, title] of [["", "All rounds"], ["A", "Attack"], ["D", "Defence"]]) {
-        const option = el("option", "", title);
-        option.value = value;
-        side.append(option);
-      }
-      controls.append(side);
+      const controls = el("div", "map-controls");
+      const select = (label, options) => {
+        const field = el("label", "", label);
+        const input = el("select");
+        for (const [value, text] of options) {
+          const option = el("option", "", text);
+          option.value = value;
+          input.append(option);
+        }
+        field.append(input);
+        controls.append(field);
+        return input;
+      };
+      const eventType = select("Events", [["", "All fights"], ["Kill", "Kills"], ["Death", "Deaths"]]);
+      const side = select("Side", [["", "Both sides"], ["A", "Attack"], ["D", "Defence"]]);
+      const view = select("View", [["density", "Density + markers"], ["events", "Markers only"], ["heat", "Density only"]]);
+      const preview = el("div", "map-preview");
+      const previewText = el("span", "", "Select a marker to preview its round.");
+      previewText.setAttribute("role", "status");
+      const jump = el("button", "quiet small", "Open round");
+      jump.type = "button";
+      jump.hidden = true;
+      preview.append(previewText, jump);
+      let selectedRound;
+      jump.addEventListener("click", () => {
+        const round = timeline.querySelectorAll(".tl-round")[selectedRound];
+        round?.click();
+        round?.focus({ preventScroll: true });
+        round?.scrollIntoView({ block: "nearest", inline: "nearest" });
+      });
       const redraw = () => {
         plot.querySelectorAll("button").forEach((button) => button.remove());
         const visible = [];
+        heat.hidden = view.value === "events";
+        jump.hidden = true;
+        previewText.textContent = view.value === "heat" ? "Switch to markers to inspect a round." : "Select a marker to preview its round.";
         for (const point of points) {
-          if (side.value && point.side !== side.value) continue;
+          if (side.value && point.side !== side.value || eventType.value && point.kind !== eventType.value) continue;
           const left = point.y * map.xMultiplier + map.xScalarToAdd;
           const top = point.x * map.yMultiplier + map.yScalarToAdd;
           if (left < 0 || left > 1 || top < 0 || top > 1) continue;
+          visible.push([left, top, point.kind]);
+          if (view.value === "heat") continue;
           const marker = el("button", "kill-marker " + point.kind.toLowerCase(), point.kind === "Kill" ? "+" : "×");
           marker.type = "button";
           marker.style.left = left * 100 + "%";
           marker.style.top = top * 100 + "%";
           marker.title = marker.ariaLabel = `${point.kind}, round ${point.round + 1}, ${clock(point.time)}`;
           marker.addEventListener("click", () => {
-            const round = timeline.querySelectorAll(".tl-round")[point.round];
-            round?.click();
-            round?.focus();
-            round?.scrollIntoView({ block: "nearest", inline: "nearest" });
+            plot.querySelector(".is-selected")?.classList.remove("is-selected");
+            marker.classList.add("is-selected");
+            selectedRound = point.round;
+            const result = match.timeline[point.round].w ? "won" : "lost";
+            previewText.textContent = `${point.kind} · Round ${point.round + 1} · ${clock(point.time)} · Round ${result}`;
+            jump.hidden = !timeline.querySelectorAll(".tl-round")[selectedRound];
           });
           plot.append(marker);
-          visible.push([left, top]);
+
         }
-        drawKillHeat(heat, visible);
-        status.textContent = visible.length ? `${visible.length} locations shown. Select a marker to open its round.` : "No locations for this side.";
+        if (!heat.hidden) drawKillHeat(heat, visible);
+        const kills = visible.filter((point) => point[2] === "Kill").length;
+        const deaths = visible.length - kills;
+        status.textContent = visible.length ? `${kills} kills plotted · ${deaths} deaths plotted` : "No locations match these filters.";
+        preview.hidden = !visible.length;
       };
       image.addEventListener("error", () => {
         plot.hidden = true;
@@ -161,8 +193,10 @@ function killMapEl(match, timeline) {
       });
       image.addEventListener("load", () => { plot.hidden = false; redraw(); });
       image.loading = "eager";
-      side.addEventListener("change", redraw);
-      body.append(controls, el("p", "hint", "Yellow to red shows increasing density. + Kill · × Death. Locations show where the victim fell."), plot);
+      for (const input of [eventType, side, view]) input.addEventListener("change", redraw);
+      const legend = el("div", "map-legend");
+      legend.append(el("span", "map-kills", "Kills"), el("span", "map-deaths", "Deaths"), el("span", "muted", "Brighter areas have more events"));
+      body.append(controls, plot, legend, preview, el("p", "hint", "Locations mark where the victim fell."));
     } catch {
       status.textContent = "Could not load the map catalog. Close and reopen to retry.";
     } finally {
@@ -179,21 +213,32 @@ function drawKillHeat(canvas, points) {
   if (!ctx) return;
   const size = canvas.width;
   ctx.clearRect(0, 0, size, size);
-  for (const [x, y] of points) {
-    const glow = ctx.createRadialGradient(x * size, y * size, 0, x * size, y * size, 24);
-    glow.addColorStop(0, "rgba(0,0,0,.38)");
-    glow.addColorStop(.4, "rgba(0,0,0,.22)");
-    glow.addColorStop(1, "transparent");
-    ctx.fillStyle = glow;
-    ctx.fillRect(x * size - 24, y * size - 24, 48, 48);
+  for (const [kind, color] of [["Kill", [65, 221, 182]], ["Death", [255, 117, 127]]]) {
+    const layer = document.createElement("canvas");
+    layer.width = layer.height = size;
+    const ink = layer.getContext("2d");
+    for (const [x, y, event] of points) {
+      if (event !== kind) continue;
+      const px = x * size;
+      const py = y * size;
+      const glow = ink.createRadialGradient(px, py, 0, px, py, 17);
+      glow.addColorStop(0, "rgba(0,0,0,.36)");
+      glow.addColorStop(.45, "rgba(0,0,0,.19)");
+      glow.addColorStop(1, "transparent");
+      ink.fillStyle = glow;
+      ink.fillRect(px - 17, py - 17, 34, 34);
+    }
+    const image = ink.getImageData(0, 0, size, size);
+    for (let i = 0; i < image.data.length; i += 4) {
+      const density = image.data[i + 3] / 255;
+      for (let channel = 0; channel < 3; channel++) {
+        image.data[i + channel] = color[channel] + (255 - color[channel]) * density * .42;
+      }
+      image.data[i + 3] = Math.round(density * 210);
+    }
+    ink.putImageData(image, 0, 0);
+    ctx.globalCompositeOperation = "screen";
+    ctx.drawImage(layer, 0, 0);
   }
-  const pixels = ctx.getImageData(0, 0, size, size);
-  for (let i = 0; i < pixels.data.length; i += 4) {
-    const density = pixels.data[i + 3] / 255;
-    pixels.data[i] = 255;
-    pixels.data[i + 1] = Math.round(225 - density * 205);
-    pixels.data[i + 2] = Math.round(70 - density * 64);
-    pixels.data[i + 3] = Math.min(220, Math.round(density * 430));
-  }
-  ctx.putImageData(pixels, 0, 0);
+  ctx.globalCompositeOperation = "source-over";
 }

@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.13", title: "Fight map", items: [
+    "Filter kills and deaths separately, switch between density and markers, and preview a round directly from the map.",
+  ] },
   { version: "4.12", title: "Match heatmaps", items: [
     "Bookmark matches from Match Details and see kill and death density over the minimap when locations are available.",
   ] },
