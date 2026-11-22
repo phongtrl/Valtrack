@@ -608,3 +608,15 @@ dialog p { margin-bottom: 18px; }
 
 #tab-performance > .chips { padding-top: 12px; }
 #tab-performance > .chips .chip { border-radius: 6px; }
+
+.review-note { display: grid; gap: 8px; margin-top: 10px; }
+.review-note textarea { width: 100%; padding: 8px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; font: inherit; resize: vertical; }
+.review-note button { justify-self: start; }
+.kill-map summary { cursor: pointer; font-weight: 600; }
+.kill-map-body { margin-top: 12px; }
+.kill-map-body label { max-width: 180px; }
+.kill-map-plot { position: relative; max-width: 560px; margin: 10px auto 0; background: #20242a; border-radius: 8px; }
+.kill-map-image { pointer-events: none; display: block; width: 100%; height: auto; }
+.kill-marker { position: absolute; z-index: 1; margin: -12px 0 0 -12px; width: 24px; height: 24px; padding: 0; border: 2px solid #151a20; border-radius: 50%; background: #a7e1b5; color: #151a20; font-size: 15px; font-weight: bold; line-height: 1; }
+.kill-marker.death { background: #ffadb1; }
+.kill-marker:focus-visible { z-index: 2; outline: 2px solid white; }

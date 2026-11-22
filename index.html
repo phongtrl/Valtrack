@@ -184,6 +184,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
           <button class="chip" type="button" data-match-preset="today">Today</button>
           <button class="chip" type="button" data-match-preset="week">Last 7 days</button>
           <button class="chip" type="button" data-match-preset="losses">Losses</button>
+          <button id="match-review-only" class="chip" type="button" aria-pressed="false">Review later</button>
         </div>
         <div id="active-match-filters" class="chips" aria-label="Active filters"></div>
         <details class="advanced-match-filters">
@@ -441,6 +442,7 @@ try { var p = localStorage.getItem("vt:theme") || "auto"; document.documentEleme
 <script src="friends.js"></script>
 <script src="store.js"></script>
 <script src="enhancements.js"></script>
+<script src="review.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

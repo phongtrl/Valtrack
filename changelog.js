@@ -1,5 +1,9 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.11", title: "Match review", items: [
+    "Save matches for Review later, add notes, and filter the match log by bookmarks.",
+    "Plot kills and deaths on the minimap when location data is available. Filter by side and select a marker to open its round.",
+  ] },
   { version: "4.10", title: "Clearer layouts", items: [
     "Rank leads Overview, Matches has compact rows and removable filter chips, Trends puts changes beside each metric, and Store bundles open to show their items.",
   ] },

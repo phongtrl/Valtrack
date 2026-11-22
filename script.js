@@ -95,7 +95,7 @@ function saveMatches() {
   // Storage is full: keep every match, but drop the heavy player details and rounds from the oldest ones.
   const slim = sortMatches(matches).map((m, i) => {
     if (i < KEEP_DETAILS || !(m.details || m.timeline)) return m;
-    const { details, timeline, ...rest } = m;
+    const { details, timeline, mapLocationsSaved, ...rest } = m;
     return rest;
   });
   if (store.set(matchKey(), JSON.stringify(slim))) {
@@ -523,7 +523,7 @@ function extractTimeline(m, teamId, details) {
     const victim = who(k?.victim);
     if (victim < 0) return;
     if (!kills.has(k.round)) kills.set(k.round, []);
-    kills.get(k.round).push([who(k?.killer), victim, secs(k.time_in_round_in_ms)]);
+    kills.get(k.round).push([who(k?.killer), victim, secs(k.time_in_round_in_ms), ...matchKillCoordinates(k)]);
   });
   return rounds.map((r, i) => {
     const id = roundId(r, i);
@@ -613,7 +613,7 @@ function parseMatch(m, who = account) {
     ...(details ? { details } : {}),
     ...(server ? { server } : {}),
     ...(weapons ? { weapons } : {}),
-    ...(timeline ? { timeline } : {}),
+    ...(timeline ? { timeline, mapLocationsSaved: true } : {}),
     ...(play || {})
   };
 }
@@ -1691,17 +1691,20 @@ function renderMatchDetail() {
   const body = $("md-body");
   const d = m.details;
   if (!d) {
-    body.replaceChildren(loadMatchEl(m, "Player details and rounds aren't saved for this match yet.", "Load match details"));
+    body.replaceChildren(reviewMatchEl(m), loadMatchEl(m, "Player details and rounds aren't saved for this match yet.", "Load match details"));
     return;
   }
   const mine = d.players.find(isMine);
   const myTeam = d.myTeam || (mine && mine.team) || d.players[0].team;
   const otherTeams = [...new Set(d.players.map((p) => p.team))].filter((t) => t !== myTeam);
+  const timeline = timelineEl(m, myTeam);
   body.replaceChildren(
+    reviewMatchEl(m),
     highlightsEl(d),
     teamEl(d, myTeam, "Your team"),
     ...otherTeams.map((t) => teamEl(d, t, "Opponents")),
-    timelineEl(m, myTeam),
+    killMapEl(m, timeline),
+    timeline,
     duelsEl(d)
   );
   const strip = body.querySelector(".tl-strip");

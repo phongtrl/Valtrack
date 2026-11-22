@@ -56,8 +56,10 @@ function renderMatchFilterOptions() {
 function filterMatchLog(list) {
   const f = matchFilters;
   const query = f.query.trim().toLowerCase();
+  const bookmarks = $("match-review-only").getAttribute("aria-pressed") === "true" ? reviewBookmarks() : null;
   if (f.since && f.until && f.since > f.until) return [];
   return list.filter((m) => {
+    if (bookmarks && !bookmarks.has(String(m.id))) return false;
     if (f.map && m.map !== f.map || f.agent && m.agent !== f.agent || f.result && m.result !== f.result) return false;
     const date = localDateInput(new Date(matchTime(m)));
     if (f.since && date < f.since || f.until && date > f.until) return false;
@@ -69,6 +71,7 @@ function filterMatchLog(list) {
 }
 
 function resetMatchFilters() {
+  $("match-review-only").setAttribute("aria-pressed", "false");
   for (const key of Object.keys(matchFilters)) {
     matchFilters[key] = "";
     const input = document.getElementById("match-" + key);
@@ -93,6 +96,12 @@ function initEnhancements() {
   });
   document.querySelectorAll("[data-match-preset]").forEach((button) => {
     button.addEventListener("click", () => applyMatchPreset(button.dataset.matchPreset));
+  });
+  $("match-review-only").addEventListener("click", (event) => {
+    const button = event.currentTarget;
+    button.setAttribute("aria-pressed", String(button.getAttribute("aria-pressed") !== "true"));
+    logPage = 0;
+    renderLog(scope());
   });
   setInterval(renderFreshness, 60000);
 }
