@@ -136,7 +136,7 @@ function killMapEl(match, timeline) {
       };
       const eventType = select("Events", [["", "All fights"], ["Kill", "Kills"], ["Death", "Deaths"]]);
       const side = select("Side", [["", "Both sides"], ["A", "Attack"], ["D", "Defence"]]);
-      const view = select("View", [["density", "Density + markers"], ["events", "Markers only"], ["heat", "Density only"]]);
+      const view = select("View", [["density", "Both layers"], ["events", "Markers only"], ["heat", "Density only"]]);
       const preview = el("div", "map-preview");
       const previewText = el("span", "", "Select a marker to preview its round.");
       previewText.setAttribute("role", "status");
@@ -164,7 +164,7 @@ function killMapEl(match, timeline) {
           if (left < 0 || left > 1 || top < 0 || top > 1) continue;
           visible.push([left, top, point.kind]);
           if (view.value === "heat") continue;
-          const marker = el("button", "kill-marker " + point.kind.toLowerCase(), point.kind === "Kill" ? "+" : "×");
+          const marker = el("button", "kill-marker " + point.kind.toLowerCase());
           marker.type = "button";
           marker.style.left = left * 100 + "%";
           marker.style.top = top * 100 + "%";
@@ -195,7 +195,7 @@ function killMapEl(match, timeline) {
       image.loading = "eager";
       for (const input of [eventType, side, view]) input.addEventListener("change", redraw);
       const legend = el("div", "map-legend");
-      legend.append(el("span", "map-kills", "Kills"), el("span", "map-deaths", "Deaths"), el("span", "muted", "Brighter areas have more events"));
+      legend.append(el("span", "map-kills", "Kills · solid"), el("span", "map-deaths", "Deaths · ring"), el("span", "muted", "Brighter areas have more events"));
       body.append(controls, plot, legend, preview, el("p", "hint", "Locations mark where the victim fell."));
     } catch {
       status.textContent = "Could not load the map catalog. Close and reopen to retry.";
