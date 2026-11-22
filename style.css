@@ -605,3 +605,6 @@ dialog p { margin-bottom: 18px; }
   .match-row [data-label="Score"] { grid-area: 1 / 2; min-width: 0; }
   .match-row [data-label="RR"] { grid-area: 1 / 3; min-width: 0; }
 }
+
+#tab-performance > .chips { padding-top: 12px; }
+#tab-performance > .chips .chip { border-radius: 6px; }
