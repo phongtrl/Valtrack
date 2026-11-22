@@ -12,7 +12,7 @@ function reviewMatchEl(match) {
   const bookmarks = reviewBookmarks();
   const id = String(match.id);
   const marked = bookmarks.has(id);
-  const toggle = el("button", "quiet small", marked ? "Remove from Review later" : "Review later");
+  const toggle = el("button", "quiet small", marked ? "Remove bookmark" : "Bookmark this match");
   toggle.type = "button";
   toggle.setAttribute("aria-pressed", String(marked));
   const status = el("p", "hint");
@@ -56,7 +56,7 @@ function reviewMatchEl(match) {
 }
 
 function matchKillCoordinates(kill) {
-  const location = kill?.victim?.location ?? kill?.victim_death_location ?? kill?.victim_location ?? kill?.victimLocation;
+  const location = kill?.victim_death_location ?? kill?.victim_location ?? kill?.victimLocation ?? kill?.victim?.location ?? kill?.victim?.death_location;
   return Number.isFinite(location?.x) && Number.isFinite(location?.y) ? [location.x, location.y] : [];
 }
 
@@ -79,7 +79,8 @@ function loadMapCatalog() {
 
 function killMapEl(match, timeline) {
   const section = el("details", "card pad kill-map");
-  section.append(el("summary", "", "Kill and death map"));
+  section.open = true;
+  section.append(el("summary", "", "Kill and death heatmap"));
   const mine = match.details.players.findIndex(isMine);
   const points = [];
   match.timeline?.forEach((round, i) => {
@@ -89,9 +90,9 @@ function killMapEl(match, timeline) {
     }
   });
   if (!points.length) {
-    section.append(match.mapLocationsSaved
-      ? el("p", "hint", "No kill or death locations are available for this match.")
-      : loadMatchEl(match, "Locations aren’t saved for this match yet.", "Load map data"));
+    section.append(loadMatchEl(match,
+      match.mapLocationsSaved ? "No locations are saved. Refresh the match to check again." : "Locations aren’t saved for this match yet.",
+      match.mapLocationsSaved ? "Refresh map data" : "Load map data"));
     return section;
   }
 
@@ -101,7 +102,7 @@ function killMapEl(match, timeline) {
   section.append(body, status);
 
   let loading = false;
-  section.addEventListener("toggle", async () => {
+  const load = async () => {
     if (!section.open || loading || body.children.length) return;
     loading = true;
     status.textContent = "Loading map…";
@@ -116,7 +117,10 @@ function killMapEl(match, timeline) {
       if (!image) throw new Error("Invalid map image");
       const plot = el("div", "kill-map-plot");
       plot.hidden = true;
-      plot.append(image);
+      const heat = el("canvas", "kill-heat");
+      heat.width = heat.height = 240;
+      heat.setAttribute("aria-hidden", "true");
+      plot.append(image, heat);
       const controls = el("label", "", "Side");
       const side = el("select");
       for (const [value, title] of [["", "All rounds"], ["A", "Attack"], ["D", "Defence"]]) {
@@ -127,7 +131,7 @@ function killMapEl(match, timeline) {
       controls.append(side);
       const redraw = () => {
         plot.querySelectorAll("button").forEach((button) => button.remove());
-        let count = 0;
+        const visible = [];
         for (const point of points) {
           if (side.value && point.side !== side.value) continue;
           const left = point.y * map.xMultiplier + map.xScalarToAdd;
@@ -145,9 +149,10 @@ function killMapEl(match, timeline) {
             round?.scrollIntoView({ block: "nearest", inline: "nearest" });
           });
           plot.append(marker);
-          count++;
+          visible.push([left, top]);
         }
-        status.textContent = count ? `${count} locations shown. Select a marker to open its round.` : "No locations for this side.";
+        drawKillHeat(heat, visible);
+        status.textContent = visible.length ? `${visible.length} locations shown. Select a marker to open its round.` : "No locations for this side.";
       };
       image.addEventListener("error", () => {
         plot.hidden = true;
@@ -157,12 +162,38 @@ function killMapEl(match, timeline) {
       image.addEventListener("load", () => { plot.hidden = false; redraw(); });
       image.loading = "eager";
       side.addEventListener("change", redraw);
-      body.append(controls, el("p", "hint", "+ Kill · × Death. Markers show where the victim fell."), plot);
+      body.append(controls, el("p", "hint", "Yellow to red shows increasing density. + Kill · × Death. Locations show where the victim fell."), plot);
     } catch {
       status.textContent = "Could not load the map catalog. Close and reopen to retry.";
     } finally {
       loading = false;
     }
-  });
+  };
+  section.addEventListener("toggle", load);
+  void load();
   return section;
+}
+
+function drawKillHeat(canvas, points) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const size = canvas.width;
+  ctx.clearRect(0, 0, size, size);
+  for (const [x, y] of points) {
+    const glow = ctx.createRadialGradient(x * size, y * size, 0, x * size, y * size, 24);
+    glow.addColorStop(0, "rgba(0,0,0,.38)");
+    glow.addColorStop(.4, "rgba(0,0,0,.22)");
+    glow.addColorStop(1, "transparent");
+    ctx.fillStyle = glow;
+    ctx.fillRect(x * size - 24, y * size - 24, 48, 48);
+  }
+  const pixels = ctx.getImageData(0, 0, size, size);
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    const density = pixels.data[i + 3] / 255;
+    pixels.data[i] = 255;
+    pixels.data[i + 1] = Math.round(225 - density * 205);
+    pixels.data[i + 2] = Math.round(70 - density * 64);
+    pixels.data[i + 3] = Math.min(220, Math.round(density * 430));
+  }
+  ctx.putImageData(pixels, 0, 0);
 }

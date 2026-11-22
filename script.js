@@ -520,10 +520,11 @@ function extractTimeline(m, teamId, details) {
   const secs = (ms) => Math.round((Number(ms) || 0) / 1000);
   const kills = new Map();
   (Array.isArray(m?.kills) ? m.kills : []).forEach((k) => {
-    const victim = who(k?.victim);
+    const victim = who(k?.victim ?? (k?.victim_puuid ? { puuid: k.victim_puuid } : null));
     if (victim < 0) return;
+    const killer = who(k?.killer ?? (k?.killer_puuid ? { puuid: k.killer_puuid } : null));
     if (!kills.has(k.round)) kills.set(k.round, []);
-    kills.get(k.round).push([who(k?.killer), victim, secs(k.time_in_round_in_ms), ...matchKillCoordinates(k)]);
+    kills.get(k.round).push([killer, victim, secs(k.time_in_round_in_ms ?? k.kill_time_in_round), ...matchKillCoordinates(k)]);
   });
   return rounds.map((r, i) => {
     const id = roundId(r, i);
@@ -1700,10 +1701,10 @@ function renderMatchDetail() {
   const timeline = timelineEl(m, myTeam);
   body.replaceChildren(
     reviewMatchEl(m),
+    killMapEl(m, timeline),
     highlightsEl(d),
     teamEl(d, myTeam, "Your team"),
     ...otherTeams.map((t) => teamEl(d, t, "Opponents")),
-    killMapEl(m, timeline),
     timeline,
     duelsEl(d)
   );

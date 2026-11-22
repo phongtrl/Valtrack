@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.12", title: "Match heatmaps", items: [
+    "Bookmark matches from Match Details and see kill and death density over the minimap when locations are available.",
+  ] },
   { version: "4.11", title: "Match review", items: [
     "Save matches for Review later, add notes, and filter the match log by bookmarks.",
     "Plot kills and deaths on the minimap when location data is available. Filter by side and select a marker to open its round.",
