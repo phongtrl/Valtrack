@@ -1200,6 +1200,16 @@ function render() {
   const view = scope();
   const s = summarize(view);
   $("s-matches").textContent = s.n;
+  const recentCount = $("s-matches-31");
+  if (recentCount) {
+    const now = Date.now();
+    const cutoff = now - 31 * DAY;
+    const total = view.filter((match) => {
+      const playedAt = matchTime(match);
+      return playedAt >= cutoff && playedAt <= now;
+    }).length;
+    recentCount.textContent = `${total} in the last 31 days`;
+  }
   $("s-record").textContent = `${s.wins} – ${s.losses}${s.draws ? ` – ${s.draws}` : ""}`;
   $("s-record").nextElementSibling.textContent = s.draws ? "Wins – losses – draws" : "Wins and losses";
   $("s-kd").textContent = s.kd.toFixed(2);
