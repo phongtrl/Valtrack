@@ -1,5 +1,8 @@
 /* Version history, newest first. Add a new entry at the top for every update. */
 const RELEASES = [
+  { version: "4.14", title: "Matches in the last 31 days", items: [
+    "Overview shows how many saved matches you played in the last 31 days for the selected game mode.",
+  ] },
   { version: "4.13", title: "Fight map", items: [
     "Filter kills and deaths separately, switch between density and markers, and preview a round directly from the map.",
   ] },
